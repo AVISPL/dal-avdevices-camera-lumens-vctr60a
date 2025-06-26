@@ -11,8 +11,8 @@ package com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param;
  * @since 1.0.0
  */
 public enum PanTiltSpeedComp {
-	ON("On", (byte) 0x00),
-	OFF("Off", (byte) 0x01);
+	ON("On", (byte) 0x01),
+	OFF("Off", (byte) 0x00);
 
 	private final String name;
 	private final byte code;

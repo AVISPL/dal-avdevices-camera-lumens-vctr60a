@@ -46,6 +46,7 @@ public class LumenVCTR60AConstants {
 	public static final String FALSE = "false";
 	public static final String ON = "On";
 	public static final String OFF = "Off";
+	public static final String ZERO = "0";
 
 	public static final String ADAPTER_METADATA = "AdapterMetadata";
 	public static final String ADAPTER_VERSION = "AdapterVersion";
@@ -57,5 +58,5 @@ public class LumenVCTR60AConstants {
 	protected static final List<String> SHUTTER_VALUES = new ArrayList<>(
 			Arrays.asList("1/10000", "1/5000", "1/3000", "1/2500", "1/2000", "1/1500", "1/1000", "1/725", "1/500", "1/350", "1/250", "1/180", "1/120", "1/100", "1/90", "1/60", "1/30"));
 	protected static final List<String> IRIS_LEVELS = new ArrayList<>(
-			Arrays.asList("Close", "F14", "F11", "F8.0", "F6.8", "F5.6", "F4.8", "F4.0", "F3.4", "F2.8", "F2.4", "F2.0", "F1.8", "F1.6"));
+			Arrays.asList("Close", "F14", "F11", "F9.6", "F8", "F6.8", "F5.6", "F4.8", "F4", "F3.4", "F2.8", "F2.4", "F2", "F1.6"));
 }

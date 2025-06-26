@@ -16,7 +16,7 @@ public enum Command {
 	//Exposure Group
 	EXPOSURE("Exposure", null),
 	EXPOSURE_MODE("Mode", new byte[] { 0x39 }),
-	ANTI_FLICK("AntiFlicker", new byte[] {  }),
+	ANTI_FLICK("AntiFlicker", new byte[] { 0x3C }),
 	WDR_OPTION("WDR", new byte[] { 0x2D }),
 	GAIN_LIMIT_DIRECT("GainLimit(dB)", new byte[] { 0x2C }),
 	SHUTTER_DIRECT("ShutterSpeed", new byte[] { 0x4A }),
@@ -60,20 +60,8 @@ public enum Command {
 	D_ZOOM_LIMIT("DZoomLimit", new byte[] { 0x26 }),
 	INITIAL_POSITION("InitialPosition", new byte[] { 0x75, 0x6A }),
 	PRESET_SPEED("PresetSpeed", new byte[] { 0x75, 0x32 }),
-	PAN_TILT_LIMIT("PanTiltLimit", new byte[] { 0x06, 0x07 }), //need to update
 	PTZ_SPEED_COMP("PTZSpeedComp", new byte[] { 0x1F, 0x01 }),
 	MOTIONLESS_PRESET("MotionlessPreset", new byte[] { 0x01 }),
-
-	// PTZ Limit group
-	PTZ_LIMIT("PanTiltZoomLimit", null),
-	PT_DOWN("PanTiltDown", new byte[] { 0x07 }),
-	PT_DOWN_CURRENT("PanTiltDownCurrent", null),
-	PT_UP("PanTiltUp", new byte[] { 0x07 }),
-	PT_UP_CURRENT("PanTiltUpCurrent", null),
-	PT_RIGHT("PanTiltRight", new byte[] { 0x07 }),
-	PT_RIGHT_CURRENT("PanTiltRightCurrent", null),
-	PT_LEFT("PanTiltLeft", new byte[] { 0x07 }),
-	PT_LEFT_CURRENT("PanTiltLeftCurrent", null),
 
 	// WB group
 	WB_MODE("Mode", new byte[] { 0x35 }),

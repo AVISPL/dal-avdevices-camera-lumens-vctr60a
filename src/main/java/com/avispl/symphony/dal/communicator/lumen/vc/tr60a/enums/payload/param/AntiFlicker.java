@@ -14,8 +14,8 @@ import java.util.Arrays;
  */
 public enum AntiFlicker {
 	OFF("Off", (byte) 0x00),
-	ANTI_FLICKER_50HZ("50Hz", (byte) 0x03),
-	ANTI_FLICKER_60HZ("60Hz", (byte) 0x0A);
+	ANTI_FLICKER_50HZ("50Hz", (byte) 0x01),
+	ANTI_FLICKER_60HZ("60Hz", (byte) 0x02);
 
 	private final String name;
 	private final byte code;

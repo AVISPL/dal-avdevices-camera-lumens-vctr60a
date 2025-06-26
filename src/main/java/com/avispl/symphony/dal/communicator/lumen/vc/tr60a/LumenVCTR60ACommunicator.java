@@ -125,7 +125,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	private int sequenceNumber = 2;
 	private int currentPreset = -1;
 	private long nextMonitoringCycleTimestamp = System.currentTimeMillis();
-	private String powerStatusMessage = null;
 
 	/** Adapter metadata properties - adapter version and build date */
 	private Properties adapterProperties;
@@ -195,7 +194,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	@Override
 	public void controlProperty(ControllableProperty controllableProperty) throws IOException {
 		if (System.currentTimeMillis() < nextMonitoringCycleTimestamp) {
-			throw new IllegalStateException("Cannot control while power is " + powerStatusMessage);
+			throw new IllegalStateException("Cannot control while power is null ");
 		}
 
 		String property = controllableProperty.getProperty();
@@ -255,7 +254,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				break;
 			}
 			case PAN_TILT_DRIVE: {
-				// (1)Name -> Split string by ")" and get the second value of slit string
 				String panTiltDriveControlName = splitProperty[1].split(LumenVCTR60AConstants.CLOSE_PARENTHESIS, 2)[1];
 
 				if (Objects.equals(panTiltDriveControlName, Command.PAN_TILT_HOME.getName())) {
@@ -283,7 +281,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				break;
 			}
 			case PRESET: {
-				// (1)Name -> Split string by ")" and get the second value of slit string
 				String presetControlName = splitProperty[1].split(LumenVCTR60AConstants.CLOSE_PARENTHESIS, 2)[1];
 
 				if (Objects.equals(presetControlName, PresetControl.PRESET_VALUE.getName())) {
@@ -386,6 +383,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 
 			long adapterUptime = System.currentTimeMillis() - adapterInitializationTimestamp;
 			stats.put(LumenVCTR60AConstants.ADAPTER_METADATA + LumenVCTR60AConstants.HASH + LumenVCTR60AConstants.ADAPTER_UPTIME, formatUpTime(String.valueOf(adapterUptime / 1000)));
+			stats.put(LumenVCTR60AConstants.ADAPTER_METADATA + LumenVCTR60AConstants.HASH + LumenVCTR60AConstants.ADAPTER_UPTIME_MIN, String.valueOf(adapterUptime / (1000 * 60)));
 		} catch (Exception e) {
 			logger.error("Failed to populate metadata information", e);
 		}
@@ -668,23 +666,25 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			stats.put(Command.FOCUS.getName() + LumenVCTR60AConstants.HASH + Command.FOCUS_MODE.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
 			return;
 		}
-
 		AFSensitivity afSensitivityValue = this.getAFSensitivity();
 		AFFrame afFrameValue = this.getAFFrame();
 
-		List<String> afFrame = new ArrayList<>();
-		afFrame.add(AFFrame.AUTO.getName());
-		afFrame.add(AFFrame.CENTER.getName());
-		afFrame.add(AFFrame.FULL_FRAME.getName());
+		List<String> afFrame = Arrays.asList(
+				AFFrame.CENTER.getName(),
+				AFFrame.FULL_FRAME.getName(),
+				AFFrame.AUTO.getName()
+		);
 
-		List<String> afSensitivity = new ArrayList<>();
-		afSensitivity.add(AFSensitivity.HIGH.getName());
-		afSensitivity.add(AFSensitivity.MIDDLE.getName());
-		afSensitivity.add(AFSensitivity.LOW.getName());
+		List<String> afSensitivity = Arrays.asList(
+				AFSensitivity.LOW.getName(),
+				AFSensitivity.MIDDLE.getName(),
+				AFSensitivity.HIGH.getName()
+		);
 
-		List<String> focusOptions = new ArrayList<>();
-		focusOptions.add(FocusMode.AUTO.getName());
-		focusOptions.add(FocusMode.MANUAL.getName());
+		List<String> focusOptions = Arrays.asList(
+				FocusMode.AUTO.getName(),
+				FocusMode.MANUAL.getName()
+		);
 
 		addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.FOCUS.getName() + LumenVCTR60AConstants.HASH + Command.FOCUS_MODE.getName(), focusOptions, focusMode.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
 
@@ -712,6 +712,14 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				SlowPanTiltStatus.OFF.getName(), SlowPanTiltStatus.ON.getName());
 	}
 
+	/**
+	 * Populates the picture settings controls.
+	 * If the picture mode is custom, it enables individual sliders for hue, saturation,
+	 * brightness, gamma, and sharpness. Always includes 2D and 3D DNR controls.
+	 *
+	 * @param stats map containing the current device status values
+	 * @param advancedControllableProperties list of control elements to populate
+	 */
 	private void populatePictureControl(Map<String, String> stats, List<AdvancedControllableProperty> advancedControllableProperties){
 		PictureMode pictureMode = this.getPictureMode();
 		PictureDNROptions number2DNROptions = this.getDNR(Command.TWO_DNR);
@@ -721,9 +729,9 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				.map(PictureDNROptions::getName)
 				.collect(Collectors.toList());
 
-		List<String> pictureOptions = new ArrayList<>();
-		pictureOptions.add(PictureMode.DEFAULT.getName());
-		pictureOptions.add(PictureMode.CUSTOM.getName());
+		List<String> pictureOptions = Arrays.asList(
+				PictureMode.DEFAULT.getName(),
+				PictureMode.CUSTOM.getName());
 
 		addAdvancedControlProperties(advancedControllableProperties,stats, createDropdown(Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.IMAGE_MODE.getName(), pictureOptions, pictureMode.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
 		if (pictureMode == PictureMode.CUSTOM) {
@@ -733,48 +741,40 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			String gamma = this.getPictureCustomValue(Command.GAMMA);
 			String sharpness = this.getPictureCustomValue(Command.SHARPNESS);
 
-			if(hueLevel == null){
-				stats.put(Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.HUE.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-			} else {
-				populateSliderControl(stats, advancedControllableProperties, Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.HUE.getName(),
-						Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.HUE_CURRENT.getName(), hueLevel, LumenVCTR60AConstants.LABEL_START_HUE_LEVEL, LumenVCTR60AConstants.LABEL_END_HUE_LEVEL, LumenVCTR60AConstants.RANGE_START_HUE_LEVEL,
-						LumenVCTR60AConstants.RANGE_END_HUE_LEVEL, Float.parseFloat(hueLevel));
-			}
-
-			if(saturation == null){
-				stats.put(Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.SATURATION.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-			} else {
-				populateSliderControl(stats, advancedControllableProperties, Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.SATURATION.getName(),
-						Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.SATURATION_CURRENT.getName(), saturation, LumenVCTR60AConstants.LABEL_START_HUE_LEVEL, LumenVCTR60AConstants.LABEL_END_HUE_LEVEL, LumenVCTR60AConstants.RANGE_START_HUE_LEVEL,
-						LumenVCTR60AConstants.RANGE_END_HUE_LEVEL, Float.parseFloat(saturation));
-			}
-
-			if(brightness == null){
-				stats.put(Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.BRIGHTNESS.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-			} else {
-				populateSliderControl(stats, advancedControllableProperties, Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.BRIGHTNESS.getName(),
-						Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.BRIGHTNESS_CURRENT.getName(), brightness, LumenVCTR60AConstants.LABEL_START_HUE_LEVEL, LumenVCTR60AConstants.LABEL_END_HUE_LEVEL, LumenVCTR60AConstants.RANGE_START_HUE_LEVEL,
-						LumenVCTR60AConstants.RANGE_END_HUE_LEVEL, Float.parseFloat(brightness));
-			}
-
-			if(gamma == null){
-				stats.put(Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.GAMMA.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-			} else {
-				populateSliderControl(stats, advancedControllableProperties, Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.GAMMA.getName(),
-						Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.GAMMA_CURRENT.getName(), gamma, "0", "4", 0F,
-						4F, Float.parseFloat(gamma));
-			}
-
-			if(sharpness == null){
-				stats.put(Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.SHARPNESS.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-			} else {
-				populateSliderControl(stats, advancedControllableProperties, Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.SHARPNESS.getName(),
-						Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.SHARPNESS_CURRENT.getName(), sharpness, "0", "4", 0F,
-						4F, Float.parseFloat(sharpness));
-			}
+			handlePictureSlider(Command.HUE, Command.HUE_CURRENT, hueLevel, LumenVCTR60AConstants.LABEL_START_HUE_LEVEL, LumenVCTR60AConstants.LABEL_END_HUE_LEVEL, LumenVCTR60AConstants.RANGE_START_HUE_LEVEL, LumenVCTR60AConstants.RANGE_END_HUE_LEVEL, stats, advancedControllableProperties);
+			handlePictureSlider(Command.SATURATION, Command.SATURATION_CURRENT, saturation, LumenVCTR60AConstants.LABEL_START_HUE_LEVEL, LumenVCTR60AConstants.LABEL_END_HUE_LEVEL, LumenVCTR60AConstants.RANGE_START_HUE_LEVEL, LumenVCTR60AConstants.RANGE_END_HUE_LEVEL, stats, advancedControllableProperties);
+			handlePictureSlider(Command.BRIGHTNESS, Command.BRIGHTNESS_CURRENT, brightness, LumenVCTR60AConstants.LABEL_START_HUE_LEVEL, LumenVCTR60AConstants.LABEL_END_HUE_LEVEL, LumenVCTR60AConstants.RANGE_START_HUE_LEVEL, LumenVCTR60AConstants.RANGE_END_HUE_LEVEL, stats, advancedControllableProperties);
+			handlePictureSlider(Command.GAMMA, Command.GAMMA_CURRENT, gamma, "0", "4", 0F, 4F, stats, advancedControllableProperties);
+			handlePictureSlider(Command.SHARPNESS, Command.SHARPNESS_CURRENT, sharpness, "0", "11", 0F, 11F, stats, advancedControllableProperties);
 		}
 		addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.TWO_DNR.getName(), dnrOptions, number2DNROptions.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
 		addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + Command.THREE_DNR.getName(), dnrOptions, number3DNROptions.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
+	}
+
+	/**
+	 * Handles the creation of a slider control for a specific picture setting.
+	 * If the provided value is not available, it sets the corresponding stat as NOT_AVAILABLE.
+	 * Otherwise, it adds a populated slider control to the list.
+	 *
+	 * @param command the command representing the picture setting (e.g. HUE, SATURATION)
+	 * @param currentCommand the command used to fetch the current value
+	 * @param value the current setting value as a string
+	 * @param labelStart label for the slider's minimum value
+	 * @param labelEnd label for the slider's maximum value
+	 * @param rangeStart the minimum range value (float)
+	 * @param rangeEnd the maximum range value (float)
+	 * @param stats the map containing current device status values
+	 * @param props the list of advanced controllable properties to populate
+	 */
+	private void handlePictureSlider(Command command, Command currentCommand, String value, String labelStart, String labelEnd, float rangeStart, float rangeEnd,
+			Map<String, String> stats, List<AdvancedControllableProperty> props) {
+		String key = Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + command.getName();
+		if (Objects.equals(value, LumenVCTR60AConstants.NONE_VALUE)) {
+			stats.put(key, LumenVCTR60AConstants.NOT_AVAILABLE);
+		} else {
+			populateSliderControl(stats, props, key, Command.PICTURE.getName() + LumenVCTR60AConstants.HASH + currentCommand.getName(),
+					value, labelStart, labelEnd, rangeStart, rangeEnd, Float.parseFloat(value));
+		}
 	}
 
 	/**
@@ -821,20 +821,23 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		ExposureMode exposureMode = this.getExposureMode();
 		AntiFlicker antiFlicker = this.getAntiFlicker();
 		WDROptions wdrOptions = this.getWDROptions();
-		List<String> WDRList = new ArrayList<>();
-		WDRList.add(WDROptions.OFF.getName());
-		WDRList.add(WDROptions.WDR_OPTIONS_1.getName());
-		WDRList.add(WDROptions.WDR_OPTIONS_2.getName());
-		WDRList.add(WDROptions.WDR_OPTIONS_3.getName());
-		WDRList.add(WDROptions.WDR_OPTIONS_4.getName());
-		WDRList.add(WDROptions.WDR_OPTIONS_5.getName());
 
-		List<String> aeModeList = new ArrayList<>();
-		aeModeList.add(ExposureMode.FULL_AUTO.getName());
-		aeModeList.add(ExposureMode.IRIS_PRIORITY.getName());
-		aeModeList.add(ExposureMode.SHUTTER_PRIORITY.getName());
-		aeModeList.add(ExposureMode.WHITE_BOARD.getName());
-		aeModeList.add(ExposureMode.MANUAL.getName());
+		List<String> WDRList = Arrays.asList(
+				WDROptions.OFF.getName(),
+				WDROptions.WDR_OPTIONS_1.getName(),
+				WDROptions.WDR_OPTIONS_2.getName(),
+				WDROptions.WDR_OPTIONS_3.getName(),
+				WDROptions.WDR_OPTIONS_4.getName(),
+				WDROptions.WDR_OPTIONS_5.getName()
+		);
+
+		List<String> aeModeList = Arrays.asList(
+				ExposureMode.FULL_AUTO.getName(),
+				ExposureMode.SHUTTER_PRIORITY.getName(),
+				ExposureMode.IRIS_PRIORITY.getName(),
+				ExposureMode.MANUAL.getName(),
+				ExposureMode.WHITE_BOARD.getName()
+		);
 
 		List<String> gainLimitOptions = IntStream.rangeClosed(8, 30)
 				.filter(n -> n % 2 == 0)
@@ -845,125 +848,103 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				.mapToObj(Integer::toString)
 				.collect(Collectors.toList());
 
-		addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXPOSURE_MODE.getName(), aeModeList, exposureMode.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
+		addDropdownControl(Command.EXPOSURE, Command.EXPOSURE_MODE, aeModeList, exposureMode.getName(), stats, advancedControllableProperties);
 
 		switch (exposureMode) {
 			case FULL_AUTO: {
-				String gainLimitLevel = this.getGainLimitLevel();
-				if(gainLimitLevel == null) {
-					stats.put(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.GAIN_LIMIT_DIRECT.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-				} else {
-					addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.GAIN_LIMIT_DIRECT.getName(), gainLimitOptions, gainLimitLevel), LumenVCTR60AConstants.NOT_AVAILABLE);
-				}
-
-				String exposureLevel = this.getExposureValue();
-				if(exposureLevel == null) {
-					stats.put(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXP_COMP_DIRECT.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-				}else {
-					populateSliderControl(stats, advancedControllableProperties, Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXP_COMP_DIRECT.getName(),
-							Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXP_COMP_CURRENT.getName(), exposureLevel, "-7", "7", -7F,
-							7F, Float.parseFloat(exposureLevel));
-				}
-
-				List<String> antiFlickList = new ArrayList<>();
-				antiFlickList.add(AntiFlicker.OFF.getName());
-				antiFlickList.add(AntiFlicker.ANTI_FLICKER_50HZ.getName());
-				antiFlickList.add(AntiFlicker.ANTI_FLICKER_60HZ.getName());
-				if(antiFlicker == null){
-					stats.put(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.ANTI_FLICK.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-				} else {
-					addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.ANTI_FLICK.getName(), antiFlickList, antiFlicker.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
-				}
-
-				addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.WDR_OPTION.getName(), WDRList, wdrOptions.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
+				List<String> antiFlickList = Arrays.asList(
+						AntiFlicker.OFF.getName(),
+						AntiFlicker.ANTI_FLICKER_50HZ.getName(),
+						AntiFlicker.ANTI_FLICKER_60HZ.getName()
+				);
+				addDropdownOrNA(Command.ANTI_FLICK, antiFlicker != null ? antiFlicker.getName() : null, antiFlickList, stats, advancedControllableProperties);
+				addDropdownOrNA(Command.GAIN_LIMIT_DIRECT, this.getGainLimitLevel(), gainLimitOptions, stats, advancedControllableProperties);
+				addSliderOrNA(Command.EXP_COMP_DIRECT, Command.EXP_COMP_CURRENT, this.getExposureValue(), stats, advancedControllableProperties);
 				break;
 			}
 			case SHUTTER_PRIORITY: {
-				// Populate exposure control
-				String exposureValue = this.getExposureValue();
-				if(exposureValue == null) {
-					stats.put(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXP_COMP_DIRECT.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-				} else{
-					populateSliderControl(stats, advancedControllableProperties, Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXP_COMP_DIRECT.getName(),
-							Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXP_COMP_CURRENT.getName(), exposureValue, "-7", "7", -7F,
-							7F, Float.parseFloat(exposureValue));
-				}
-
-				// Populate gain limit control
-				String gainLimitLevel = this.getGainLimitLevel();
-				if(gainLimitLevel == null) {
-					stats.put(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.GAIN_LIMIT_DIRECT.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-				} else {
-					addAdvancedControlProperties(advancedControllableProperties, stats,
-							createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.GAIN_LIMIT_DIRECT.getName(), gainLimitOptions, gainLimitLevel), LumenVCTR60AConstants.NOT_AVAILABLE);
-				}
-				// Populate shutter control
-				String shutterSpeed = this.getShutterSpeed();
-				if(shutterSpeed == null) {
-					stats.put(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.SHUTTER_DIRECT.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-				} else {
-					addAdvancedControlProperties(advancedControllableProperties, stats,
-							createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.SHUTTER_DIRECT.getName(), LumenVCTR60AConstants.SHUTTER_VALUES, shutterSpeed),
-							LumenVCTR60AConstants.NOT_AVAILABLE);
-				}
-				// Populate WDRList control
-				addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.WDR_OPTION.getName(), WDRList, wdrOptions.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
+				addSliderOrNA(Command.EXP_COMP_DIRECT, Command.EXP_COMP_CURRENT, this.getExposureValue(), stats, advancedControllableProperties);
+				addDropdownOrNA(Command.GAIN_LIMIT_DIRECT, this.getGainLimitLevel(), gainLimitOptions, stats, advancedControllableProperties);
+				addDropdownOrNA(Command.SHUTTER_DIRECT, this.getShutterSpeed(), LumenVCTR60AConstants.SHUTTER_VALUES, stats, advancedControllableProperties);
 				break;
 			}
 			case IRIS_PRIORITY: {
-				// Populate exposure control
-				String exposureValue = this.getExposureValue();
-				populateSliderControl(stats, advancedControllableProperties, Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXP_COMP_DIRECT.getName(),
-						Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXP_COMP_CURRENT.getName(), exposureValue, "-7", "7", -7F,
-						7F, Float.parseFloat(exposureValue));
-
-				// Populate gain limit control
-				String gainLimitLevel = this.getGainLimitLevel();
-				addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.GAIN_LIMIT_DIRECT.getName(), gainLimitOptions, gainLimitLevel), LumenVCTR60AConstants.NOT_AVAILABLE);
-
-				// Populate iris control
-				String irisLevel = this.getIrisLevel();
-				addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.IRIS_DIRECT.getName(), LumenVCTR60AConstants.IRIS_LEVELS, irisLevel), LumenVCTR60AConstants.NOT_AVAILABLE);
-
-				// Populate WDRList control
-				addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.WDR_OPTION.getName(), WDRList, wdrOptions.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
+				addSliderOrNA(Command.EXP_COMP_DIRECT, Command.EXP_COMP_CURRENT, this.getExposureValue(), stats, advancedControllableProperties);
+				addDropdownOrNA(Command.GAIN_LIMIT_DIRECT, this.getGainLimitLevel(), gainLimitOptions, stats, advancedControllableProperties);
+				addDropdownOrNA(Command.IRIS_DIRECT, this.getIrisLevel(), LumenVCTR60AConstants.IRIS_LEVELS, stats, advancedControllableProperties);
 				break;
 			}
 			case MANUAL:
-				// Populate shutter control
-				String shutterSpeed = this.getShutterSpeed();
-				addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.SHUTTER_DIRECT.getName(), LumenVCTR60AConstants.SHUTTER_VALUES, shutterSpeed), LumenVCTR60AConstants.NOT_AVAILABLE);
-				// Populate gain control
-				String gainLevel = this.getGainLevel();
-				if(LumenVCTR60AConstants.NONE_VALUE.equals(gainLevel)){
-					stats.put(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.GAIN_DIRECT.getName(), LumenVCTR60AConstants.NOT_AVAILABLE);
-				} else {
-					addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.GAIN_DIRECT.getName(), gainLevelOptions, gainLevel), LumenVCTR60AConstants.NOT_AVAILABLE);
-				}
-
-				// Populate iris control
-				String irisLevel = this.getIrisLevel();
-				addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.IRIS_DIRECT.getName(), LumenVCTR60AConstants.IRIS_LEVELS, irisLevel), LumenVCTR60AConstants.NOT_AVAILABLE);
-
-				// Populate WDRList control
-				addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.WDR_OPTION.getName(), WDRList, wdrOptions.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
+				addDropdownOrNA(Command.SHUTTER_DIRECT, this.getShutterSpeed(), LumenVCTR60AConstants.SHUTTER_VALUES, stats, advancedControllableProperties);
+				addDropdownOrNA(Command.GAIN_DIRECT, this.getGainLevel(), gainLevelOptions, stats, advancedControllableProperties);
+				addDropdownOrNA(Command.IRIS_DIRECT, this.getIrisLevel(), LumenVCTR60AConstants.IRIS_LEVELS, stats, advancedControllableProperties);
 				break;
 			case WHITE_BOARD:{
-				// Populate gain limit control
-				String gainLimitLevel = this.getGainLimitLevel();
-				addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.GAIN_LIMIT_DIRECT.getName(), gainLimitOptions, gainLimitLevel), LumenVCTR60AConstants.NOT_AVAILABLE);
-
-				// Populate exposure control
-				String exposureLevel = this.getExposureValue();
-				populateSliderControl(stats, advancedControllableProperties, Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXP_COMP_DIRECT.getName(),
-						Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.EXP_COMP_CURRENT.getName(), exposureLevel, "-7", "7", -7F,
-						7F, Float.parseFloat(exposureLevel));
-				// Populate WDRList control
-				addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + Command.WDR_OPTION.getName(), WDRList, wdrOptions.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
+				addDropdownOrNA(Command.GAIN_LIMIT_DIRECT, this.getGainLimitLevel(), gainLimitOptions, stats, advancedControllableProperties);
+				addSliderOrNA(Command.EXP_COMP_DIRECT, Command.EXP_COMP_CURRENT, this.getExposureValue(), stats, advancedControllableProperties);
 				break;
 			}
 			default:
 				throw new IllegalStateException("Unexpected exposure mode: " + exposureMode);
+		}
+		addDropdownControl(Command.EXPOSURE, Command.WDR_OPTION, WDRList, wdrOptions.getName(), stats, advancedControllableProperties);
+	}
+
+	/**
+	 * Adds a dropdown control to the stats and controllable properties.
+	 *
+	 * @param group command group
+	 * @param command specific command key
+	 * @param options list of options for dropdown
+	 * @param value current selected value
+	 * @param stats status map to update
+	 * @param props control properties list to update
+	 */
+	private void addDropdownControl(Command group, Command command, List<String> options, String value,
+			Map<String, String> stats, List<AdvancedControllableProperty> props) {
+		addAdvancedControlProperties(props, stats,
+				createDropdown(group.getName() + LumenVCTR60AConstants.HASH + command.getName(), options, value),
+				LumenVCTR60AConstants.NOT_AVAILABLE);
+	}
+
+	/**
+	 * Adds a dropdown control or marks it as not available if value is null or NONE.
+	 *
+	 * @param command specific command key
+	 * @param value current selected value
+	 * @param options list of dropdown options
+	 * @param stats status map to update
+	 * @param props control properties list to update
+	 */
+	private void addDropdownOrNA(Command command, String value, List<String> options,
+			Map<String, String> stats, List<AdvancedControllableProperty> props) {
+		String key = Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + command.getName();
+		if (value == null || LumenVCTR60AConstants.NONE_VALUE.equals(value)) {
+			stats.put(key, LumenVCTR60AConstants.NOT_AVAILABLE);
+		} else {
+			addDropdownControl(Command.EXPOSURE, command, options, value, stats, props);
+		}
+	}
+
+	/**
+	 * Adds a slider control or marks it as not available if value is null or NONE.
+	 *
+	 * @param command control command key
+	 * @param currentCommand command used to retrieve current value
+	 * @param value current slider value as string
+	 * @param stats status map to update
+	 * @param props control properties list to update
+	 */
+	private void addSliderOrNA(Command command, Command currentCommand, String value,
+			Map<String, String> stats, List<AdvancedControllableProperty> props) {
+		String key = Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + command.getName();
+		if (value == null || LumenVCTR60AConstants.NONE_VALUE.equals(value)) {
+			stats.put(key, LumenVCTR60AConstants.NOT_AVAILABLE);
+		} else {
+			populateSliderControl(stats, props,
+					Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + command.getName(),
+					Command.EXPOSURE.getName() + LumenVCTR60AConstants.HASH + currentCommand.getName(),
+					value, "-7", "7", -7F, 7F, Float.parseFloat(value));
 		}
 	}
 
@@ -977,14 +958,15 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @param advancedControllableProperties is the list that store all controllable properties
 	 */
 	private void populateWBControl(Map<String, String> stats, List<AdvancedControllableProperty> advancedControllableProperties) {
-		List<String> wbModeList = new ArrayList<>();
-		wbModeList.add(WBMode.AUTO.getName());
-		wbModeList.add(WBMode.INDOOR.getName());
-		wbModeList.add(WBMode.OUTDOOR.getName());
-		wbModeList.add(WBMode.ONE_PUSH_WB.getName());
-		wbModeList.add(WBMode.MANUAL.getName());
-		wbModeList.add(WBMode.ATW.getName());
-		wbModeList.add(WBMode.SODIUM_LAMP.getName());
+		List<String> wbModeList = Arrays.asList(
+				WBMode.AUTO.getName(),
+				WBMode.INDOOR.getName(),
+				WBMode.OUTDOOR.getName(),
+				WBMode.ONE_PUSH_WB.getName(),
+				WBMode.ATW.getName(),
+				WBMode.MANUAL.getName(),
+				WBMode.SODIUM_LAMP.getName()
+		);
 
 		String wbMode = this.getWBMode();
 
@@ -1053,7 +1035,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @param advancedControllableProperties is the list that store all controllable properties
 	 */
 	private void populatePresetControl(Map<String, String> stats, List<AdvancedControllableProperty> advancedControllableProperties) {
-		// Populate switch preset to select
 		List<String> presetList = new ArrayList<>();
 		presetList.add(LumenVCTR60AConstants.DEFAULT_PRESET);
 
@@ -1073,30 +1054,28 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @param advancedControllableProperties the list to which new advanced control properties will be appended
 	 */
 	private void populatePanTiltZoomControl(Map<String, String> stats, List<AdvancedControllableProperty> advancedControllableProperties) {
-		List<String> dZoomList = new ArrayList<>();
-		List<String> presetSpeedList = new ArrayList<>();
-		presetSpeedList.add(PresetSpeed.ONE.getName());
-		presetSpeedList.add(PresetSpeed.TWO.getName());
-		presetSpeedList.add(PresetSpeed.THREE.getName());
-		presetSpeedList.add(PresetSpeed.FOUR.getName());
-		presetSpeedList.add(PresetSpeed.FIVE.getName());
+		List<String> dZoomList = IntStream.rangeClosed(1, 16)
+				.mapToObj(i -> "x" + i)
+				.collect(Collectors.toList());
 
-		List<String> initialPositionList = new ArrayList<>();
-		initialPositionList.add(InitialPosition.FIRST_PRESET.getName());
-		initialPositionList.add(InitialPosition.LAST_MEM.getName());
+		List<String> presetSpeedList = Arrays.asList(
+				PresetSpeed.ONE.getName(),
+				PresetSpeed.TWO.getName(),
+				PresetSpeed.THREE.getName(),
+				PresetSpeed.FOUR.getName(),
+				PresetSpeed.FIVE.getName()
+		);
+
+		List<String> initialPositionList = Arrays.asList(
+				InitialPosition.LAST_MEM.getName(),
+				InitialPosition.FIRST_PRESET.getName()
+		);
 
 		String dZoomValue = this.getDZoomValue();
-		String panTiltLimit = "On"; // this.getPanTiltStatus(Command.SLOW_PAN_TILT); // Miss command
-		String ptzSpeedCompStatus = this.getPanTiltStatus(Command.PTZ_SPEED_COMP);
+		String ptzSpeedCompStatus = this.getPanTiltStatus();
 		String motionlessPreset = this.getMotionlessPreset();
 		InitialPosition initialPosition = this.getInitialPosition();
 		PresetSpeed presetSpeedValue = this.getPresetSpeed();
-
-		for (int i = 0; i <= 16; ++i) {
-			dZoomList.add("x" + i);
-		}
-		populateSwitchControl(stats, advancedControllableProperties, Command.PTZ.getName() + LumenVCTR60AConstants.HASH + Command.PAN_TILT_LIMIT.getName(), panTiltLimit,
-				SlowPanTiltStatus.OFF.getName(), SlowPanTiltStatus.ON.getName());
 
 		populateSwitchControl(stats, advancedControllableProperties, Command.PTZ.getName() + LumenVCTR60AConstants.HASH + Command.PTZ_SPEED_COMP.getName(), ptzSpeedCompStatus,
 				SlowPanTiltStatus.OFF.getName(), SlowPanTiltStatus.ON.getName());
@@ -1107,41 +1086,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.PTZ.getName() + LumenVCTR60AConstants.HASH + Command.D_ZOOM_LIMIT.getName(), dZoomList, dZoomValue), LumenVCTR60AConstants.NOT_AVAILABLE);
 		addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.PTZ.getName() + LumenVCTR60AConstants.HASH + Command.PRESET_SPEED.getName(), presetSpeedList, presetSpeedValue.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
 		addAdvancedControlProperties(advancedControllableProperties, stats, createDropdown(Command.PTZ.getName() + LumenVCTR60AConstants.HASH + Command.INITIAL_POSITION.getName(), initialPositionList, initialPosition.getName()), LumenVCTR60AConstants.NOT_AVAILABLE);
-		if(LumenVCTR60AConstants.ON.equals(panTiltLimit)){
-			populatePanTiltZoomLimitControl(stats, advancedControllableProperties);
-		}
-	}
-
-	/**
-	 * Populates the pan-tilt limit controls for PTZ when pan/tilt limiting is enabled.
-	 *
-	 * @param stats Map storing current property values
-	 * @param advancedControllableProperties List to which the created slider controls are appended for UI manipulation.
-	 */
-	private void populatePanTiltZoomLimitControl(Map<String, String> stats, List<AdvancedControllableProperty> advancedControllableProperties) {
-		try {
-			String panTiltDown = this.getPanTiltZoomLimit(Command.PT_DOWN);
-			String panTiltUp = this.getPanTiltZoomLimit(Command.PT_UP);
-			String panTiltLeft = this.getPanTiltZoomLimit(Command.PT_LEFT);
-			String panTiltRight = this.getPanTiltZoomLimit(Command.PT_RIGHT);
-			populateSliderControl(stats, advancedControllableProperties, Command.PTZ_LIMIT.getName() + LumenVCTR60AConstants.HASH + Command.PT_DOWN.getName(),
-					Command.PTZ_LIMIT.getName() + LumenVCTR60AConstants.HASH + Command.PT_DOWN_CURRENT.getName(), panTiltDown, "-30", "0", -30F,
-					0F, Float.parseFloat(panTiltDown));
-
-			populateSliderControl(stats, advancedControllableProperties, Command.PTZ_LIMIT.getName() + LumenVCTR60AConstants.HASH + Command.PT_UP.getName(),
-					Command.PTZ_LIMIT.getName() + LumenVCTR60AConstants.HASH + Command.PT_UP_CURRENT.getName(), panTiltUp, "0", "90", 0F,
-					90F, Float.parseFloat(panTiltUp));
-
-			populateSliderControl(stats, advancedControllableProperties, Command.PTZ_LIMIT.getName() + LumenVCTR60AConstants.HASH + Command.PT_LEFT.getName(),
-					Command.PTZ_LIMIT.getName() + LumenVCTR60AConstants.HASH + Command.PT_LEFT_CURRENT.getName(), panTiltLeft, "-170", "0", -170F,
-					0F, Float.parseFloat(panTiltLeft));
-
-			populateSliderControl(stats, advancedControllableProperties, Command.PTZ_LIMIT.getName() + LumenVCTR60AConstants.HASH + Command.PT_RIGHT.getName(),
-					Command.PTZ_LIMIT.getName() + LumenVCTR60AConstants.HASH + Command.PT_RIGHT_CURRENT.getName(), panTiltRight, "0", "170", 0F,
-					170F, Float.parseFloat(panTiltRight));
-		} catch (Error e) {
-			logger.error("Error getting " + e);
-		}
 	}
 
 	/**
@@ -1344,27 +1288,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			return String.valueOf(digestResponse(response, currentSeqNum, CommandType.INQUIRY, expectedCommand));
 		} catch (Exception e) {
 			this.logger.error("error during get " + expectedCommand.getName() + " " + "custom", e);
-			return LumenVCTR60AConstants.NOT_AVAILABLE;
-		}
-	}
-
-	/**
-	 * This method is used to get the current display PanTiltZoomLimit like:
-	 * PT_DOWN, PT_UP, PT_RIGHT, PT_LEFT
-	 *
-	 * @param expectedCommand: command of PT_DOWN, PT_UP, PT_RIGHT, PT_LEFT
-	 * @return String This returns the expectedCommand
-	 */
-	private String getPanTiltZoomLimit(Command expectedCommand) {
-		try {
-			int currentSeqNum = ++sequenceNumber;
-			byte[] response = send(
-					buildSendPacket(cameraIDInt, currentSeqNum, PayloadType.INQUIRY.getCode(), CommandType.INQUIRY.getCode(), PayloadCategory.CAMERA.getCode(), expectedCommand.getCode()));
-
-			return String.valueOf(digestResponse(response, currentSeqNum, CommandType.INQUIRY, expectedCommand));
-		} catch (Exception e) {
-			this.logger.error("error during get " +  expectedCommand.getName() + " custom", e);
-			return LumenVCTR60AConstants.LABEL_START_GAIN_LEVEL;
+			return LumenVCTR60AConstants.NONE_VALUE;
 		}
 	}
 
@@ -1386,7 +1310,11 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		return LumenVCTR60AConstants.NONE_VALUE;
 	}
 
-
+	/**
+	 * This method is used to get the initial position value
+	 *
+	 * @return String This returns the initial position value
+	 */
 	private InitialPosition getInitialPosition(){
 		try {
 			int currentSeqNum = ++sequenceNumber;
@@ -1404,6 +1332,11 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		return InitialPosition.LAST_MEM;
 	}
 
+	/**
+	 * This method is used to get the preset speed value
+	 *
+	 * @return String This returns the preset speed value
+	 */
 	private PresetSpeed getPresetSpeed(){
 		try {
 			int currentSeqNum = ++sequenceNumber;
@@ -1421,6 +1354,11 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		return PresetSpeed.ONE;
 	}
 
+	/**
+	 * This method is used to get the DNR value
+	 *
+	 * @return String This returns the DNR value
+	 */
 	private PictureDNROptions getDNR(Command expectedCommand) {
 		try {
 			int currentSeqNum = ++sequenceNumber;
@@ -1541,7 +1479,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		} catch (Exception e) {
 			this.logger.error("error during get shutter speed", e);
 		}
-		return LumenVCTR60AConstants.NOT_AVAILABLE;
+		return LumenVCTR60AConstants.NONE_VALUE;
 	}
 
 	/**
@@ -1565,7 +1503,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		} catch (Exception e) {
 			this.logger.error("error during get iris level", e);
 		}
-		return LumenVCTR60AConstants.NOT_AVAILABLE;
+		return LumenVCTR60AConstants.NONE_VALUE;
 	}
 
 	/**
@@ -1718,13 +1656,13 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 *
 	 * @return String This returns the slow pan tilt status
 	 */
-	private String getPanTiltStatus(Command expectedCommand) {
+	private String getPanTiltStatus() {
 		try {
 			int currentSeqNum = ++sequenceNumber;
 			byte[] response = send(
-					buildSendPacket(cameraIDInt, currentSeqNum, PayloadType.INQUIRY.getCode(), CommandType.INQUIRY.getCode(), PayloadCategory.PAN_TILTER.getCode(), expectedCommand.getCode()));
+					buildSendPacket(cameraIDInt, currentSeqNum, PayloadType.INQUIRY.getCode(), CommandType.INQUIRY.getCode(), PayloadCategory.PAN_TILTER.getCode(), Command.PTZ_SPEED_COMP.getCode()));
 
-			PanTiltSpeedComp status = (PanTiltSpeedComp) digestResponse(response, currentSeqNum, CommandType.INQUIRY, expectedCommand);
+			PanTiltSpeedComp status = (PanTiltSpeedComp) digestResponse(response, currentSeqNum, CommandType.INQUIRY, Command.PTZ_SPEED_COMP);
 
 			if (status == null) {
 				return PanTiltSpeedComp.OFF.getName();
@@ -2024,7 +1962,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 						}
 						case EXP_COMP_DIRECT:
 							int rawQ = reply[5] & 0x0F;
-							if (rawQ > 0x0A) {
+							if (rawQ > 0x0E) {
 								logger.warn("ExpComp q out of range: 0x" + Integer.toHexString(rawQ));
 								return LumenVCTR60AConstants.NONE_VALUE;
 							}
@@ -2076,13 +2014,13 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 									.filter(status -> status.getCode() == currentValue)
 									.findFirst();
 							return afFrame.orElse(null);
-						case PRIVACY_MODE:
 						case TRACKING_LED_STATUS:
+						case DHCP:
 							Optional<SlowPanTiltStatus> trackingValue = Arrays.stream(SlowPanTiltStatus.values())
 									.filter(status -> status.getCode() == currentValue)
 									.findFirst();
 							return trackingValue.map(SlowPanTiltStatus::getName).orElse(null);
-						case DHCP:
+						case PRIVACY_MODE:
 						case USB:
 						case TALLY_MODE:
 							Optional<SlowPanTiltStatus> currentStatus = Arrays.stream(SlowPanTiltStatus.values())
@@ -2103,23 +2041,18 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 							byte dZoomValue = reply[2];
 							int zoomIndex = Byte.toUnsignedInt(dZoomValue);
 							return "x" + (zoomIndex + 1);
+						case GAMMA:
+							return String.valueOf(reply[2] & 0xFF);
 						case HUE:
 						case SATURATION:
 						case BRIGHTNESS:
-						case GAMMA:
 						case SHARPNESS:
-							int first = 2;
-							int last = reply.length;
-							while (last > first && (reply[last - 1] == (byte)0x00 || reply[last - 1] == (byte)0xFF)) {
-								last--;
+							int length = reply.length;
+							int pictureValue = 0;
+							for (int i = length - 5; i < length - 1; i++) {
+								pictureValue = (pictureValue << 4) | (reply[i] & 0x0F);
 							}
-							String result = new String(reply, first, last - first, StandardCharsets.US_ASCII);
-							boolean allMatch = result.codePoints().allMatch(c -> c >= 32 && c <= 126);
-							boolean blanks = result.matches("\\s*");
-							if(!allMatch || blanks){
-								return "0";
-							}
-							return result;
+							return String.valueOf(pictureValue);
 						case FIRMWARE_VERSION:
 						case SERIAL_NUMBER:
 						case MAC_ADDRESS:

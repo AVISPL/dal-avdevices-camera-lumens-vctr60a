@@ -22,7 +22,11 @@ import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.Prefix;
 public class LumenVCTR60AUtils {
 	/**
 	 * This method is used to build a command to be sent according to Lumens Protocol
-	 *
+	 * The packet structure:
+	 * <pre>
+	 * [Payload Type][Payload Length][Sequence Number (4 bytes)][Payload...]
+	 * </pre>
+	 * The payload is constructed by {@link #buildPayload(int, byte, byte, byte[], byte...)}.
 	 * @param cameraID This is int value representing the camera ID
 	 * @param sequenceNumber This is the int value representing the sequence number of command to be sent
 	 * @param payloadType This is the byte value representing the payload type code
@@ -66,7 +70,11 @@ public class LumenVCTR60AUtils {
 
 	/**
 	 * This method is used to build a payload string to be sent according to Lumens Protocol
-	 *
+	 * <p>
+	 * Payload structure:
+	 * <pre>
+	 * [Command Prefix + Camera ID][Command Type][Category][Command...][Parameters...][0xFF]
+	 * </pre>
 	 * @param cameraID This is int value representing the camera ID
 	 * @param commandType This is the byte value representing command type code
 	 * @param category This is the byte value representing the category code

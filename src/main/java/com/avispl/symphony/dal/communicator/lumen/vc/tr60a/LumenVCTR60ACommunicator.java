@@ -34,6 +34,7 @@ import com.avispl.symphony.api.dal.dto.monitor.ExtendedStatistics;
 import com.avispl.symphony.api.dal.dto.monitor.Statistics;
 import com.avispl.symphony.api.dal.error.CommandFailureException;
 import com.avispl.symphony.api.dal.monitor.Monitorable;
+import com.avispl.symphony.dal.communicator.UDPCommunicator;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.Index;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.ReplyStatus;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.devices.ResponseParser;
@@ -464,8 +465,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @param errorMessages is the error messages of properties when out of range
 	 */
 	private void checkOutOfRange(StringBuilder errorMessages) {
-		System.out.println("ZOOM: " + this.zoomSpeedInt);
-		System.out.println("FOCUS: " + this.focusSpeedInt);
 		if (this.cameraIDInt < 1 || this.cameraIDInt > 7) {
 			errorMessages.append("Camera ID with value ").append(this.VISCACameraIDAddress).append(" is out of range. Camera ID must between 1 and 7. ");
 		}
@@ -1852,9 +1851,9 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			return Integer.parseInt(value);
 		} catch (NumberFormatException e) {
 			errorMessages.append(fieldName)
-					.append(" with value ")
+					.append(" with value '")
 					.append(value)
-					.append(" is wrong format of number. ");
+					.append("' is not a valid number. ");
 			return 1;
 		}
 	}

@@ -2,6 +2,8 @@ package com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param;
 
 import java.util.Arrays;
 
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.devices.DeviceEnum;
+
 /**
  * This class is used to define initial position
  *
@@ -9,7 +11,7 @@ import java.util.Arrays;
  * @version 1.0.0
  * @since 1.0.0
  */
-public enum InitialPosition {
+public enum InitialPosition implements DeviceEnum {
 	LAST_MEM("LastMEM", (byte) 0x00),
 	FIRST_PRESET("1stPreset", (byte) 0x01);
 

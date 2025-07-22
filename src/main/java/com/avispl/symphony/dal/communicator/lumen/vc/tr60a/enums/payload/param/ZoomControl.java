@@ -11,8 +11,8 @@ package com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param;
  * @since 1.0.0
  */
 public enum ZoomControl {
-	TELE("ZoomIn", (byte) 0x20),
-	WIDE("ZoomOut", (byte) 0x30),
+	TELE("ZoomIn", (byte) 0x02),
+	WIDE("ZoomOut", (byte) 0x03),
 	STOP("Stop", (byte) 0x00);
 
 	private final String name;

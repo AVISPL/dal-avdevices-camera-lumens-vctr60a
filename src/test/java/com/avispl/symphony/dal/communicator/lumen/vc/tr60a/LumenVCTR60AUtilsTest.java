@@ -34,7 +34,7 @@ import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.Z
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.interfaces.MockTest;
 
 /**
- * Unit test for AverPTZ Utils - method build send string
+ * Unit test for Lumens Utils - method build send string
  * Build send string which match expected string
  *
  * @author Harry
@@ -49,7 +49,7 @@ public class LumenVCTR60AUtilsTest {
 	ByteArrayOutputStream outputStream;
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for power on which match expected packet
 	 */
 	@Test
@@ -62,7 +62,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for power off which match expected packet
 	 */
 	@Test
@@ -75,7 +75,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for zoom tele which match expected packet
 	 */
 	@Test
@@ -89,7 +89,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for zoom wide which match expected packet
 	 */
 	@Test
@@ -103,7 +103,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for zoom stop which match expected packet
 	 */
 	@Test
@@ -116,7 +116,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for focus far which match expected packet
 	 */
 	@Test
@@ -124,13 +124,13 @@ public class LumenVCTR60AUtilsTest {
 	public void testBuildSendPacketFocusFar() {
 		int focusSpeed = 1;
 		byte[] actualPacketFocusFar = buildSendPacket(cameraID, sequenceNumber, PayloadType.COMMAND.getCode(), CommandType.COMMAND.getCode(), PayloadCategory.CAMERA.getCode(),
-				Command.FOCUS.getCode(), (byte) (FocusControl.FAR.getCode() + focusSpeed));
+				Command.FOCUS_GROUP.getCode(), (byte) (FocusControl.FAR.getCode() + focusSpeed));
 
 		assertArrayEquals(SendPacket.FOCUS_FAR.getCode(), actualPacketFocusFar);
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for focus near which match expected packet
 	 */
 	@Test
@@ -138,26 +138,26 @@ public class LumenVCTR60AUtilsTest {
 	public void testBuildSendPacketFocusNear() {
 		int focusSpeed = 1;
 		byte[] actualPacketFocusNear = buildSendPacket(cameraID, sequenceNumber, PayloadType.COMMAND.getCode(), CommandType.COMMAND.getCode(), PayloadCategory.CAMERA.getCode(),
-				Command.FOCUS.getCode(), (byte) (FocusControl.NEAR.getCode() + focusSpeed));
+				Command.FOCUS_GROUP.getCode(), (byte) (FocusControl.NEAR.getCode() + focusSpeed));
 
 		assertArrayEquals(SendPacket.FOCUS_NEAR.getCode(), actualPacketFocusNear);
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for focus stop which match expected packet
 	 */
 	@Test
 	@Category(MockTest.class)
 	public void testBuildSendPacketFocusStop() {
 		byte[] actualPacketFocusNear = buildSendPacket(cameraID, sequenceNumber, PayloadType.COMMAND.getCode(), CommandType.COMMAND.getCode(), PayloadCategory.CAMERA.getCode(),
-				Command.FOCUS.getCode(), FocusControl.STOP.getCode());
+				Command.FOCUS_GROUP.getCode(), FocusControl.STOP.getCode());
 
 		assertArrayEquals(SendPacket.FOCUS_STOP.getCode(), actualPacketFocusNear);
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for auto-focus which match expected packet
 	 */
 	@Test
@@ -169,7 +169,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for manual-focus which match expected packet
 	 */
 	@Test
@@ -182,7 +182,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for focus one push which match expected packet
 	 */
 	@Test
@@ -195,7 +195,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for WB auto mode which match expected packet
 	 */
 	@Test
@@ -208,7 +208,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for WB indoor mode which match expected packet
 	 */
 	@Test
@@ -221,7 +221,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for WB outdoor mode which match expected packet
 	 */
 	@Test
@@ -234,7 +234,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for WB one push mode which match expected packet
 	 */
 	@Test
@@ -247,7 +247,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for WB manual mode which match expected packet
 	 */
 	@Test
@@ -260,7 +260,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for WB one push trigger which match expected packet
 	 */
 	@Test
@@ -273,7 +273,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for RGain up control which match expected packet
 	 */
 	@Test
@@ -286,7 +286,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for RGain down control which match expected packet
 	 */
 	@Test
@@ -299,7 +299,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for BGain up control which match expected packet
 	 */
 	@Test
@@ -312,7 +312,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for BGain down control which match expected packet
 	 */
 	@Test
@@ -325,7 +325,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for AE full auto mode which match expected packet
 	 */
 	@Test
@@ -338,7 +338,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for AE manual mode which match expected packet
 	 */
 	@Test
@@ -351,7 +351,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for AE shutter priority mode which match expected packet
 	 */
 	@Test
@@ -364,7 +364,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for AE iris priority mode which match expected packet
 	 */
 	@Test
@@ -377,7 +377,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for Slow shutter on which match expected packet
 	 */
 	@Test
@@ -390,7 +390,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for Slow shutter off which match expected packet
 	 */
 	@Test
@@ -403,7 +403,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for shutter direct which match expected packet
 	 */
 	@Test
@@ -418,7 +418,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for iris direct which match expected packet
 	 */
 	@Test
@@ -433,7 +433,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for gain direct which match expected packet
 	 */
 	@Test
@@ -448,7 +448,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for gain limit direct which match expected packet
 	 */
 	@Test
@@ -463,7 +463,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for gain exp comp direct which match expected packet
 	 */
 	@Test
@@ -478,7 +478,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for backlight on which match expected packet
 	 */
 	@Test
@@ -491,7 +491,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for backlight off which match expected packet
 	 */
 	@Test
@@ -504,7 +504,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for preset set which match expected packet
 	 */
 	@Test
@@ -518,7 +518,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for preset recall which match expected packet
 	 */
 	@Test
@@ -532,7 +532,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for slow pan-tilt on which match expected packet
 	 */
 	@Test
@@ -545,7 +545,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for slow pan-tilt off which match expected packet
 	 */
 	@Test
@@ -558,7 +558,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for pan-tilt drive up which match expected packet
 	 */
 	@Test
@@ -575,7 +575,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for pan-tilt drive up which match expected packet
 	 */
 	@Test
@@ -592,7 +592,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for pan-tilt drive down which match expected packet
 	 */
 	@Test
@@ -609,7 +609,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for pan-tilt drive left which match expected packet
 	 */
 	@Test
@@ -626,7 +626,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for pan-tilt drive right which match expected packet
 	 */
 	@Test
@@ -643,7 +643,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for pan-tilt drive down left which match expected packet
 	 */
 	@Test
@@ -660,7 +660,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for pan-tilt drive down right which match expected packet
 	 */
 	@Test
@@ -677,7 +677,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for pan-tilt drive up left which match expected packet
 	 */
 	@Test
@@ -694,7 +694,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for pan-tilt drive up right which match expected packet
 	 */
 	@Test
@@ -711,7 +711,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendPacket success
+	 * Test LumenVCTR60AUtils#buildSendPacket success
 	 * Expect build a control command for pan-tilt drive home which match expected packet
 	 */
 	@Test
@@ -724,7 +724,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for power status which match expected packet
 	 */
 	@Test
@@ -736,7 +736,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for focus status which match expected packet
 	 */
 	@Test
@@ -749,7 +749,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for AE Mode which match expected packet
 	 */
 	@Test
@@ -761,7 +761,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for slow shutter which match expected packet
 	 */
 	@Test
@@ -774,7 +774,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for shutter position which match expected packet
 	 */
 	@Test
@@ -787,7 +787,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for iris position which match expected packet
 	 */
 	@Test
@@ -800,7 +800,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for gain position which match expected packet
 	 */
 	@Test
@@ -813,7 +813,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for gain limit position which match expected packet
 	 */
 	@Test
@@ -826,7 +826,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for exposure position which match expected packet
 	 */
 	@Test
@@ -839,7 +839,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for backlight status which match expected packet
 	 */
 	@Test
@@ -852,7 +852,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for WB mode which match expected packet
 	 */
 	@Test
@@ -864,7 +864,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for RGain value which match expected packet
 	 */
 	@Test
@@ -877,7 +877,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for BGain value which match expected packet
 	 */
 	@Test
@@ -890,7 +890,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for slow pan-tilt status which match expected packet
 	 */
 	@Test
@@ -903,7 +903,7 @@ public class LumenVCTR60AUtilsTest {
 	}
 
 	/**
-	 * Test AverPTZUtils#buildSendString success
+	 * Test LumenVCTR60AUtils#buildSendString success
 	 * Expect build an inquiry command for last preset recalled which match expected packet
 	 */
 	@Test

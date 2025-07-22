@@ -18,18 +18,12 @@ public enum GeneralProperty {
 	SERIAL_NUMBER("SerialNumber", PayloadCategory.SERIAL.getCode(), Command.SERIAL_NUMBER),
 	MAC_ADDRESS("MACAddress", PayloadCategory.CAMERA.getCode(), Command.MAC_ADDRESS),
 	CAMERA_ID("CameraId", PayloadCategory.CAMERA_ID.getCode(), Command.CAMERA_ID),
-	VIDEO_HDMI_FORMAT("VideoHDMIFormat", PayloadCategory.HDMI_FORMAT.getCode(), Command.HDMI_FORMAT),
-	VIDEO_PIP("VideoPIP", PayloadCategory.PIP.getCode(), Command.PIP),
-	VIDEO_PRIVACY_MODE("VideoPrivacyMode", PayloadCategory.CAMERA.getCode(), Command.PRIVACY_MODE),
-	SYSTEM_BAUD_RATE("System#BaudRate", PayloadCategory.BAUD_RATE.getCode(), Command.BAUD_RATE),
-	SYSTEM_DHCP("System#DHCP", PayloadCategory.SYSTEM.getCode(), Command.DHCP),
-	SYSTEM_DNS("System#DNS", PayloadCategory.SYSTEM.getCode(), Command.DNS),
-	SYSTEM_GATEWAY("System#Gateway", PayloadCategory.SYSTEM.getCode(), Command.GATEWAY),
-	SYSTEM_IPV4_NETMASK("System#IPv4Netmask", PayloadCategory.SYSTEM.getCode(), Command.IPV4_NETMASK),
-	SYSTEM_TALLY_LAMP("System#TallyLamp", PayloadCategory.CAMERA_ID.getCode(), Command.TALLY_MODE),
-	SYSTEM_TRACKING_LED("System#TrackingLedStatus", PayloadCategory.TRACKING.getCode(), Command.TRACKING_LED_STATUS),
-	SYSTEM_USB_STREAM("System#USBStreamStatus", PayloadCategory.CAMERA_ID.getCode(), Command.USB);
-
+	SYSTEM_DHCP("DHCP", PayloadCategory.SYSTEM.getCode(), Command.DHCP),
+	IPV4_ADDRESS( "IPv4Address", PayloadCategory.SYSTEM.getCode(), Command.IPV4_ADDRESS),
+	IPV4_NETMASK( "IPv4Netmask", PayloadCategory.SYSTEM.getCode(), Command.IPV4_NETMASK),
+	SYSTEM_GATEWAY("Gateway", PayloadCategory.SYSTEM.getCode(), Command.GATEWAY),
+	SYSTEM_DNS("DNS", PayloadCategory.SYSTEM.getCode(), Command.DNS),
+	SYSTEM_TRACKING_LED("TrackingLedStatus", PayloadCategory.TRACKING.getCode(), Command.TRACKING_LED_STATUS);
 	private final String key;
 	private final byte categoryCode;
 	private final Command command;

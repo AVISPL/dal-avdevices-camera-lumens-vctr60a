@@ -5,6 +5,8 @@ package com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param;
 
 import java.util.Arrays;
 
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.devices.DeviceEnum;
+
 /**
  * This class is used to define ExposureMode
  *
@@ -12,7 +14,7 @@ import java.util.Arrays;
  * @version 1.0.0
  * @since 1.0.0
  */
-public enum ExposureMode {
+public enum ExposureMode implements DeviceEnum {
 	FULL_AUTO("FullAuto", (byte) 0x00),
 	MANUAL("Manual", (byte) 0x03),
 	SHUTTER_PRIORITY("ShutterPriority", (byte) 0x0A),

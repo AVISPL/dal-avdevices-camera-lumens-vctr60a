@@ -5,6 +5,8 @@ package com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param;
 
 import java.util.Arrays;
 
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.devices.DeviceEnum;
+
 /**
  * This class is used to define wb mode
  *
@@ -12,7 +14,7 @@ import java.util.Arrays;
  * @version 1.0.0
  * @since 1.0.0
  */
-public enum WBMode {
+public enum WBMode implements DeviceEnum {
 	AUTO("Auto", (byte) 0x00),
 	INDOOR("Indoor", (byte) 0x01),
 	OUTDOOR("Outdoor", (byte) 0x02),

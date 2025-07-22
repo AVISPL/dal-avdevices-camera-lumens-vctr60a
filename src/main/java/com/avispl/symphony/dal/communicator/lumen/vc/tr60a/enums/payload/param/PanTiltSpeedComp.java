@@ -3,6 +3,8 @@
  */
 package com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param;
 
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.devices.DeviceEnum;
+
 /**
  * This class is used to define pan tilt speed comp status
  *
@@ -10,7 +12,7 @@ package com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param;
  * @version 1.0.0
  * @since 1.0.0
  */
-public enum PanTiltSpeedComp {
+public enum PanTiltSpeedComp implements DeviceEnum {
 	ON("On", (byte) 0x01),
 	OFF("Off", (byte) 0x00);
 

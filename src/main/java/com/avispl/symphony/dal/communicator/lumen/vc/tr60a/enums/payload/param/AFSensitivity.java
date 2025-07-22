@@ -5,6 +5,8 @@ package com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param;
 
 import java.util.Arrays;
 
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.devices.DeviceEnum;
+
 /**
  * This class is used to define AFSensitivity
  *
@@ -12,7 +14,7 @@ import java.util.Arrays;
  * @version 1.0.0
  * @since 1.0.0
  */
-public enum AFSensitivity {
+public enum AFSensitivity implements DeviceEnum {
 	HIGH("High", (byte) 0x01),
 	MIDDLE("Middle", (byte) 0x02),
 	LOW("Low", (byte) 0x03);

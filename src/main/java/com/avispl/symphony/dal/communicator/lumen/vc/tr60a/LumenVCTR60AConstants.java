@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * This class is used for Aver PTZ to save all Constants
+ * This class is used for Lumens to save all Constants
  *
  * @author Harry
  * @version 1.0.0
@@ -17,27 +17,15 @@ import java.util.List;
 public class LumenVCTR60AConstants {
 	public static final byte BYTE_SUFFIX = (byte) 0xFF;
 	public static final char HASH = '#';
-	public static final String SEMICOLON = ";";
-	public static final String EQUAL = "=";
-	public static final String GET_DEVICE_INFO_URL = "//storks/?cmd=get_sys_stat";
-	public static final String MAC_PREFIX = "00:18:1A";
-	public static final String DEVICE_MFG = "AVer Information Co.";
-	public static final String MAC_LABEL = "mac";
-	public static final String DEVICE_FIRMWARE_VERSION_LABEL = "fw_ver";
-	public static final String DEVICE_MODEL_LABEL = "model_name";
-	public static final String DEVICE_SERIAL_NUMBER_VERSION_LABEL = "sn";
-	public static final String LABEL_START_HUE_LEVEL = "0";
 	public static final String LABEL_END_HUE_LEVEL = "14";
 	public static final float RANGE_START_HUE_LEVEL = 0F;
 	public static final float RANGE_END_HUE_LEVEL = 14F;
-	public static final String LABEL_START_GAIN_LEVEL = "0";
 	public static final String SWITCH_STATUS_ON = "1";
 	public static final String SWITCH_STATUS_OFF = "0";
 	public static final String PLUS = "+";
 	public static final String MINUS = "-";
 	public static final String CLOSE_PARENTHESIS = "\\)";
 	public static final String DEFAULT_PRESET = "Please select a preset";
-	public static final String SYSTEM = "System";
 
 	public static final String NONE_VALUE = "None";
 	public static final String NULL = "Null";

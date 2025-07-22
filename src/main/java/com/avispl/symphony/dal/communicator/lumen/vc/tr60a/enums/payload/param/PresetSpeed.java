@@ -2,6 +2,8 @@ package com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param;
 
 import java.util.Arrays;
 
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.devices.DeviceEnum;
+
 /**
  * This class is used to preset speed
  *
@@ -9,7 +11,7 @@ import java.util.Arrays;
  * @version 1.0.0
  * @since 1.0.0
  */
-public enum PresetSpeed {
+public enum PresetSpeed implements DeviceEnum {
 	ONE("5deg/sec", (byte) 0x00),
 	TWO("25deg/sec", (byte) 0x01),
 	THREE("50deg/sec", (byte) 0x02),

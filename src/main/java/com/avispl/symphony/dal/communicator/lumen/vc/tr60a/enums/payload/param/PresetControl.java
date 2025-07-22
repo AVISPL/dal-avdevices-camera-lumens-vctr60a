@@ -18,7 +18,8 @@ public enum PresetControl {
 	PRESET_VALUE("PresetValue", (byte) 0x00),
 	LAST_PRESET_RECALLED("LastPresetRecalled", (byte) 0x00),
 	SET("Save", (byte) 0x01),
-	RECALL("ReCall", (byte) 0x02);
+	RECALL("ReCall", (byte) 0x02),
+	RECALL_LARGE("ReCall", (byte) 0x12);
 
 
 	private final String name;

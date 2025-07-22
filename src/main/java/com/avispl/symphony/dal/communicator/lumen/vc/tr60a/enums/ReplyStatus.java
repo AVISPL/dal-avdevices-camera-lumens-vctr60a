@@ -15,6 +15,7 @@ public enum ReplyStatus {
 	ACK(new byte[] { (byte) 0x90, 0x41, (byte) 0xFF }),
 	SYNTAX_ERROR_CONTROL(new byte[] { (byte) 0x90, 0x61, 0x02, (byte) 0xFF }),
 	SYNTAX_ERROR_INQUIRY(new byte[] { (byte) 0x90, 0x60, 0x02, (byte) 0xFF }),
+	SYNTAX_ERROR_CODE(new byte[] { (byte) 0x90, 0x60, 0x00, (byte) 0xFF }),
 	COMMAND_BUFFER_FULL_CONTROL(new byte[] { (byte) 0x90, 0x61, 0x03, (byte) 0xFF }),
 	COMMAND_BUFFER_FULL_INQUIRY(new byte[] { (byte) 0x90, 0x60, 0x03, (byte) 0xFF }),
 	NO_SOCKET_CONTROL(new byte[] { (byte) 0x90, 0x61, 0x05, (byte) 0xFF }),

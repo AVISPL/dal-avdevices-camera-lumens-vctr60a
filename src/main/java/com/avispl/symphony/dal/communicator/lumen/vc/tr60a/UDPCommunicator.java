@@ -20,7 +20,7 @@ import com.avispl.symphony.dal.communicator.Communicator;
 import com.avispl.symphony.dal.communicator.ConnectionStatus;
 
 /**
- * An implementation of UDPCommunicator to provide communication and interaction with AVER PTZ Camera.
+ * An implementation of UDPCommunicator to provide communication and interaction with Lumens Camera.
  *
  * @author Harry
  * @version 1.0.0
@@ -280,6 +280,7 @@ public class UDPCommunicator extends BaseDevice implements Communicator {
 			if (this.datagramSocket == null || this.datagramSocket.isClosed() || !this.datagramSocket.isConnected()) {
 				this.address = InetAddress.getByName(this.host);
 				this.datagramSocket = new DatagramSocket(this.port);
+				this.datagramSocket.setReuseAddress(true);
 				this.datagramSocket.connect(this.address, this.port);
 				this.datagramSocket.setSoTimeout(this.timeout);
 			}

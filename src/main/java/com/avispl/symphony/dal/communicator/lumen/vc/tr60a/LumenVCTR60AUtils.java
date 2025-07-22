@@ -21,7 +21,7 @@ import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.Prefix;
  */
 public class LumenVCTR60AUtils {
 	/**
-	 * This method is used to build a command to be sent according to Aver Protocol
+	 * This method is used to build a command to be sent according to Lumens Protocol
 	 *
 	 * @param cameraID This is int value representing the camera ID
 	 * @param sequenceNumber This is the int value representing the sequence number of command to be sent
@@ -65,7 +65,7 @@ public class LumenVCTR60AUtils {
 	}
 
 	/**
-	 * This method is used to build a payload string to be sent according to Aver Protocol
+	 * This method is used to build a payload string to be sent according to Lumens Protocol
 	 *
 	 * @param cameraID This is int value representing the camera ID
 	 * @param commandType This is the byte value representing command type code

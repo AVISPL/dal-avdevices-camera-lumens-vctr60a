@@ -5,6 +5,8 @@ package com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param;
 
 import java.util.Arrays;
 
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.devices.DeviceEnum;
+
 /**
  * This class is used to define WDROptions
  *
@@ -12,7 +14,7 @@ import java.util.Arrays;
  * @version 1.0.0
  * @since 1.0.0
  */
-public enum WDROptions {
+public enum WDROptions implements DeviceEnum {
 	OFF("Off", (byte) 0x00),
 	WDR_OPTIONS_1("1", (byte) 0x01),
 	WDR_OPTIONS_2("2", (byte) 0x02),

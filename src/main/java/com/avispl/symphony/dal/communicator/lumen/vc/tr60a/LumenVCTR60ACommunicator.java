@@ -134,7 +134,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 */
 	public LumenVCTR60ACommunicator() throws IOException {
 		super();
-		this.setPort(52381);
 		this.setCommandSuccessList(Collections.singletonList(getHexByteString(ReplyStatus.COMPLETION.getCode())));
 		adapterProperties = new Properties();
 		adapterProperties.load(getClass().getResourceAsStream("/version.properties"));
@@ -689,7 +688,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			}
 
 		} catch (Exception e){
-			logger.error("error during command " + commandField.getName() + " send", e);
 			throw new IllegalStateException("Error while sending command " + commandField.getName());
 		}
 	}
@@ -737,7 +735,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			}
 
 		} catch (Exception e){
-			logger.error("error during command " + commandField.getName() + " send", e);
 			throw new IllegalStateException("Error while sending command " + commandField.getName());
 		}
 	}
@@ -781,7 +778,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				}
 			}
 		} catch (Exception e){
-			logger.error("error during command " + commandField.getName() + " send", e);
 			throw new IllegalStateException("Error while sending command " + commandField.getName());
 		}
 	}
@@ -1284,7 +1280,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @param buttonLabel is the label of button control
 	 */
 	private void populateButtonControl(Map<String, String> stats, List<AdvancedControllableProperty> advancedControllableProperties, String propertyName, String buttonLabel) {
-		stats.put(propertyName, "");
+		stats.put(propertyName, LumenVCTR60AConstants.NOT_AVAILABLE);
 		advancedControllableProperties.add(createButton(propertyName, buttonLabel));
 	}
 	//--------------------------------------------------------------------------------------------------------------------------------
@@ -1910,7 +1906,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		button.setLabelPressed("Running...");
 		button.setGracePeriod(0L);
 
-		return new AdvancedControllableProperty(name, new Date(), button, "");
+		return new AdvancedControllableProperty(name, new Date(), button, LumenVCTR60AConstants.NOT_AVAILABLE);
 	}
 
 	/**

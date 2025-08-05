@@ -134,6 +134,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 */
 	public LumenVCTR60ACommunicator() throws IOException {
 		super();
+		this.setPort(52381);
 		this.setCommandSuccessList(Collections.singletonList(getHexByteString(ReplyStatus.COMPLETION.getCode())));
 		adapterProperties = new Properties();
 		adapterProperties.load(getClass().getResourceAsStream("/version.properties"));

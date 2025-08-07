@@ -37,6 +37,7 @@ public enum Command {
 	FOCUS_FAR( "Focus", "Far", new byte[] { 0x08, 0x02 }),
 	FOCUS_NEAR( "Focus", "Near", new byte[] { 0x08, 0x03 }),
 	FOCUS_VARIABLE_SPEED("Dynamic", null, new byte[] { 0x08 }),
+	FOCUS_POSITION("", "FocusPosition", new byte[] { 0x48 }),
 
 	//Mirror group
 	MIRROR_GROUP( "", "Mirror", null),
@@ -89,6 +90,7 @@ public enum Command {
 	POWER( "", "Power", new byte[] { 0x00 }),
 	POWER_STATUS( "", "PowerStatus", null),
 	ZOOM( "", "ZoomControl", new byte[] { 0x07 }),
+	ZOOM_POSITION( "", "ZoomPosition", new byte[] { 0x47 }),
 
 	FOCUS_ONE_PUSH( "", "OnePush", new byte[] { 0x18, 0x01 }),
 	WHITE_BALANCE( "", "WhiteBalance", null),
@@ -102,7 +104,7 @@ public enum Command {
 	FIRMWARE_VERSION( "", "FirmwareVersion", new byte[] { (byte) 0xCF }),
 	SERIAL_NUMBER( "", "SerialNumber", new byte[] { 0x18 }),
 	MAC_ADDRESS( "", "MACAddress", new byte[] { 0x78 }),
-	CAMERA_ID( "", "CameraId", new byte[] { (byte) 0xCE }),
+	CAMERA_ID( "", "CameraID", new byte[] { (byte) 0xCE }),
 	HDMI_FORMAT( "", "VideoHDMIFormat", new byte[] { 0x01, 0x03 }),
 	PRIVACY_MODE( "", "VideoPrivacyMode", new byte[] { 0x00, 0x02 }),
 	PIP( "", "VideoPIP", new byte[] { 0x02, 0x02 }),

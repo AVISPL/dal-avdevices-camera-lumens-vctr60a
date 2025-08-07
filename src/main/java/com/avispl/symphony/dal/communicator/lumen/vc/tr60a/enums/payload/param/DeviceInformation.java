@@ -15,7 +15,7 @@ import java.util.Arrays;
 public enum DeviceInformation{
 	FIRMWARE_VERSION("FirmwareVersion", (byte) 0xCF),
 	MAC_ADDRESS("MACAddress", (byte) 0x00),
-	CAMERA_ID("CameraId", (byte) 0x00),
+	CAMERA_ID("CameraID", (byte) 0x00),
 	VIDEO_RESOLUTION("VideoResolution", (byte) 0x00),
 	VIDEO_HDMI_FORMAT("VideoHDMIFormat", (byte) 0x00),
 	VIDEO_PIP("VideoPIP", (byte) 0x00),

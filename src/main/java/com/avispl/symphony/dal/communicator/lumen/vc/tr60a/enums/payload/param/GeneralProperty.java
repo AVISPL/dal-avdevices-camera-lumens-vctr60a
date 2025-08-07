@@ -17,7 +17,7 @@ public enum GeneralProperty {
 	FIRMWARE_VERSION("FirmwareVersion", PayloadCategory.FIRMWARE.getCode(), Command.FIRMWARE_VERSION),
 	SERIAL_NUMBER("SerialNumber", PayloadCategory.SERIAL.getCode(), Command.SERIAL_NUMBER),
 	MAC_ADDRESS("MACAddress", PayloadCategory.CAMERA.getCode(), Command.MAC_ADDRESS),
-	CAMERA_ID("CameraId", PayloadCategory.CAMERA_ID.getCode(), Command.CAMERA_ID),
+	CAMERA_ID("CameraID", PayloadCategory.CAMERA_ID.getCode(), Command.CAMERA_ID),
 	SYSTEM_DHCP("DHCP", PayloadCategory.SYSTEM.getCode(), Command.DHCP),
 	IPV4_ADDRESS( "IPv4Address", PayloadCategory.SYSTEM.getCode(), Command.IPV4_ADDRESS),
 	IPV4_NETMASK( "IPv4Netmask", PayloadCategory.SYSTEM.getCode(), Command.IPV4_NETMASK),

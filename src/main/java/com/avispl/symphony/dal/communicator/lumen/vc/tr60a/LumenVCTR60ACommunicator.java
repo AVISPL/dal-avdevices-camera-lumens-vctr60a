@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -310,34 +311,22 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				}
 				break;
 			}
-			case ZOOM: {
+			case ZOOM:{
 				String zoomPosition = getZoomPosition();
+				String direction = splitProperty[1];
+
 				if (zoomPosition == null) {
 					this.logger.warn("Zoom position not available, skip control.");
 					break;
 				}
 
-				OptionalInt currentIndexOpt = IntStream.range(0, ZoomPosition.values().length)
-						.filter(i -> ZoomPosition.values()[i].getName().equalsIgnoreCase(zoomPosition))
-						.findFirst();
-				if (!currentIndexOpt.isPresent()) {
-					this.logger.warn("Zoom position not found in enum: " + zoomPosition);
+				Optional<byte[]> newZoomCodeOpt = calculateNewZoomCode(zoomPosition, direction);
+				if (!newZoomCodeOpt.isPresent()) {
 					break;
 				}
 
-				int currentIndex = currentIndexOpt.getAsInt();
-				int targetIndex = currentIndex;
+				byte[] newZoomCode = newZoomCodeOpt.get();
 
-				if (Objects.equals(splitProperty[1], ZoomControl.TELE.getName())) {
-					if (currentIndex < ZoomPosition.values().length - 1) {
-						targetIndex = currentIndex + 1;
-					}
-				} else if (Objects.equals(splitProperty[1], ZoomControl.WIDE.getName())) {
-					if (currentIndex > 0) {
-						targetIndex = currentIndex - 1;
-					}
-				}
-				byte[] newZoomCode = ZoomPosition.values()[targetIndex].getCode();
 				if (zoomSpeedInt != null) {
 					byte[] zoomParam = new byte[5];
 					System.arraycopy(newZoomCode, 0, zoomParam, 0, 4);
@@ -346,7 +335,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				} else {
 					performControl(PayloadCategory.CAMERA, Command.ZOOM_POSITION, newZoomCode);
 				}
-
 				break;
 			}
 			case FOCUS_GROUP:
@@ -1931,6 +1919,38 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		byte p = (byte) ((intValue >> 4) & 0x0F);
 		byte q = (byte) (intValue & 0x0F);
 		return new byte[]{p, q};
+	}
+
+	/**
+	 * Calculates the new zoom code based on the current zoom position and the given direction.
+	 *
+	 * @param zoomPosition the name of the current zoom position (case-insensitive match with {@link ZoomPosition} enum)
+	 * @param direction the direction of zoom adjustment, expected to be either {@link ZoomControl#TELE} or {@link ZoomControl#WIDE}
+	 * @return an {@link Optional} containing the new zoom code as a byte array if the current position is valid; otherwise, {@link Optional#empty()}
+	 */
+	private Optional<byte[]> calculateNewZoomCode(String zoomPosition, String direction) {
+		OptionalInt currentIndexOpt = IntStream.range(0, ZoomPosition.values().length)
+				.filter(i -> ZoomPosition.values()[i].getName().equalsIgnoreCase(zoomPosition))
+				.findFirst();
+
+		if (!currentIndexOpt.isPresent()) {
+			this.logger.warn("Zoom position not found in enum: " + zoomPosition);
+			return Optional.empty();
+		}
+
+		int currentIndex = currentIndexOpt.getAsInt();
+		int targetIndex = currentIndex;
+
+		boolean isTele = Objects.equals(direction, ZoomControl.TELE.getName());
+		boolean isWide = Objects.equals(direction, ZoomControl.WIDE.getName());
+
+		if (isTele && currentIndex < ZoomPosition.values().length - 1) {
+			targetIndex++;
+		} else if (isWide && currentIndex > 0) {
+			targetIndex--;
+		}
+
+		return Optional.of(ZoomPosition.values()[targetIndex].getCode());
 	}
 
 	/**

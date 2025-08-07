@@ -68,7 +68,7 @@ public enum ZoomPosition {
 
 		ZoomPosition closest = null;
 		int minDiff = Integer.MAX_VALUE;
-		for (ZoomPosition zp : ZoomPosition.values()) {
+		for (ZoomPosition zp : values()) {
 			int zpValue = toFocusAndZoomPositionValue(zp.getCode());
 			int diff = Math.abs(value - zpValue);
 			if (diff < minDiff) {

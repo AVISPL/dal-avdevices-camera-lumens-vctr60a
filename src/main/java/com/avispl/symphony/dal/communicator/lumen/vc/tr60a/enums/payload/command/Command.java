@@ -19,6 +19,8 @@ public enum Command {
 	ANTI_FLICK("Exposure","AntiFlicker", new byte[] { 0x3C }),
 	WDR_OPTION("Exposure","WDR", new byte[] { 0x2D }),
 	GAIN_LIMIT_DIRECT("Exposure","GainLimit(dB)", new byte[] { 0x2C }),
+	GAIN_LEVEL("Exposure","GainLevel(dB)", new byte[] { 0x4C }),
+	GAIN_LEVEL_CONTROL("Exposure","GainLevelControl", new byte[] { 0x4C, 0x00, 0x00, 0x00 }),
 	SHUTTER_DIRECT("Exposure","ShutterSpeed", new byte[] { 0x4A }),
 	SHUTTER_CONTROL("Exposure","ShutterControl", new byte[] { 0x4A, 0x00, 0x00 }),
 	IRIS_DIRECT("Exposure","IrisLevel", new byte[] { 0x4B }),

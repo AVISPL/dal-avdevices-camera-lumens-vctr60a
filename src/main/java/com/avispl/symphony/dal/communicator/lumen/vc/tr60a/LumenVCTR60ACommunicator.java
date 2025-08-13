@@ -57,6 +57,7 @@ import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.D
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ExposureCompLevel;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ExposureMode;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.FocusMode;
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.GainLevel;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.GeneralProperty;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.InitialPosition;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.IrisControl;
@@ -507,23 +508,23 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 */
 	private void checkOutOfRange(StringBuilder errorMessages) {
 		if (this.cameraIDInt < 1 || this.cameraIDInt > 7) {
-			errorMessages.append("Camera ID with value ").append(this.VISCACameraIDAddress).append(" is out of range. Camera ID must between 1 and 7. ");
+			errorMessages.append("Camera ID with value ").append(this.VISCACameraIDAddress).append(" is out of range. Camera ID must be between 1 and 7. ");
 		}
 
 		if (this.panSpeedInt < 1 || this.panSpeedInt > 24) {
-			errorMessages.append("Pan speed with value ").append(this.panSpeed).append(" is out of range. Pan speed must between 1 and 24. ");
+			errorMessages.append("Pan speed with value ").append(this.panSpeed).append(" is out of range. Pan speed must be between 1 and 24. ");
 		}
 
 		if (this.tiltSpeedInt < 1 || this.tiltSpeedInt > 20) {
-			errorMessages.append("Tilt speed with value ").append(this.tiltSpeed).append(" is out of range. Tilt speed must between 1 and 20. ");
+			errorMessages.append("Tilt speed with value ").append(this.tiltSpeed).append(" is out of range. Tilt speed must be between 1 and 20. ");
 		}
 
 		if ( this.zoomSpeedInt != null && (this.zoomSpeedInt < 0 || zoomSpeedInt > 7)) {
-			errorMessages.append("Zoom speed with value ").append(this.zoomSpeedInt).append(" is out of range. Zoom speed must between 0 and 7. ");
+			errorMessages.append("Zoom speed with value ").append(this.zoomSpeedInt).append(" is out of range. Zoom speed must be between 0 and 7. ");
 		}
 
 		if (this.focusSpeedInt != null && (focusSpeedInt < 0 || focusSpeedInt > 7)) {
-			errorMessages.append("Focus speed with value ").append(this.focusSpeedInt).append(" is out of range. Focus speed must between 0 and 7.");
+			errorMessages.append("Focus speed with value ").append(this.focusSpeedInt).append(" is out of range. Focus speed must be between 0 and 7.");
 		}
 	}
 
@@ -629,6 +630,9 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			case SHUTTER_DIRECT:
 				performControl(PayloadCategory.CAMERA, Command.SHUTTER_CONTROL, ShutterControl.getByName(value).getCode());
 				break;
+			case GAIN_LEVEL:
+				performControl(PayloadCategory.CAMERA, Command.GAIN_LEVEL_CONTROL, GainLevel.getByName(value).getCode());
+				break;
 			case WDR_OPTION:
 				performControl(PayloadCategory.CAMERA, exposureCommand, WDROptions.getByName(value).getCode());
 				break;
@@ -637,7 +641,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			}
 		}
 	}
-
 	/**
 	 * This method is used to control focus:
 	 * <li>Focus Mode</li>
@@ -1081,6 +1084,10 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				.map(ShutterControl::getName)
 				.collect(Collectors.toList());
 
+		List<String> gainLevelList = Arrays.stream(GainLevel.values())
+				.map(GainLevel::getName)
+				.collect(Collectors.toList());
+
 		List<String> WDRList = Arrays.asList(
 				WDROptions.OFF.getName(),
 				WDROptions.WDR_OPTIONS_1.getName(),
@@ -1134,6 +1141,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				break;
 			}
 			case MANUAL:
+				addDropdownOrNA(Command.GAIN_LEVEL, this.getGainLevel(), gainLevelList, stats, advancedControllableProperties);
 				addDropdownOrNA(Command.SHUTTER_DIRECT, this.getShutterSpeed(), shutterList, stats, advancedControllableProperties);
 				addDropdownOrNA(Command.IRIS_DIRECT, this.getIrisLevel(), irisNameList, stats, advancedControllableProperties);
 				break;
@@ -1449,6 +1457,16 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	private String getGainLimitLevel() {
 		return getValueByCommand(Command.GAIN_LIMIT_DIRECT, PayloadCategory.CAMERA, Integer.class,
 				"gain limit level", val -> String.valueOf((int) val));
+	}
+
+	/**
+	 * This method is used to get the current display current gain level
+	 *
+	 * @return String This returns the gain level
+	 */
+	private String getGainLevel() {
+		return getValueByCommand(Command.GAIN_LEVEL, PayloadCategory.CAMERA, Object.class,
+				"gain level", String::valueOf);
 	}
 
 	/**

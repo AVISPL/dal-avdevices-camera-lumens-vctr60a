@@ -29,7 +29,7 @@ public class LumenVCTR60AConstants {
 	public static final String DEFAULT_PRESET = "Please select a preset";
 	public static final String POWER_ON_STATUS = "Turning on...";
 	public static final String POWER_OFF_STATUS = "Turning off...";
-	public static final int FOCUS_STEP = 300;
+	public static final int FOCUS_STEP = 10;
 	public static final int FOCUS_MIN = 0x0000; // Far
 	public static final int FOCUS_MAX = 0x131A; // Near
 

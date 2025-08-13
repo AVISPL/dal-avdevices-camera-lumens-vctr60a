@@ -18,6 +18,7 @@ import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.B
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ExposureCompLevel;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ExposureMode;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.FocusMode;
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.GainLevel;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.InitialPosition;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.IrisControl;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.PanTiltSpeedComp;
@@ -84,6 +85,8 @@ public class ResponseParser extends BaseDevice {
 				return reply[4] * 16 + reply[5];
 			case GAIN_LIMIT_DIRECT:
 				return 2 * (Byte.toUnsignedInt(reply[2]) - 4) + 8;
+			case GAIN_LEVEL:
+				return parseGainLevel(reply);
 			case PRESET:
 				return Byte.toUnsignedInt(reply[2]);
 			case BACKLIGHT:
@@ -206,6 +209,20 @@ public class ResponseParser extends BaseDevice {
 				.map(SlowPanTiltStatus::getName)
 				.findFirst()
 				.orElse(null);
+	}
+
+	/**
+	 * Parses a gain level from the specified device reply.
+	 *
+	 * @param reply response byte array from the device
+	 * @return gain level name from {@link GainLevel} or {@code NONE_VALUE} if index is out-of-range
+	 */
+	private String parseGainLevel(byte[] reply) {
+		List<String> gainList = Arrays.stream(GainLevel.values())
+				.map(GainLevel::getName)
+				.collect(Collectors.toList());
+		int index = Byte.toUnsignedInt(reply[5]);
+		return index < gainList.size() ? gainList.get(index) : LumenVCTR60AConstants.NONE_VALUE;
 	}
 
 	/**

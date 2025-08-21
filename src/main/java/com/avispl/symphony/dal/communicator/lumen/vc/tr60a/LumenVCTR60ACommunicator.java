@@ -143,7 +143,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 */
 	public LumenVCTR60ACommunicator() throws IOException {
 		super();
-		this.setPort(52381);
 		this.setCommandSuccessList(Collections.singletonList(getHexByteString(ReplyStatus.COMPLETION.getCode())));
 		adapterProperties = new Properties();
 		adapterProperties.load(getClass().getResourceAsStream("/version.properties"));
@@ -316,7 +315,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				String zoomPosition = getZoomPosition();
 				String direction = splitProperty[1];
 
-				if (zoomPosition == null) {
+				if (zoomPosition == null && logger.isWarnEnabled()) {
 					this.logger.warn("Zoom position not available, skip control.");
 					break;
 				}
@@ -366,12 +365,14 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 					performControl(PayloadCategory.PAN_TILTER, Command.PAN_TILT_HOME);
 					break;
 				}
-
-				PanTiltDrive pantTiltDrive = PanTiltDrive.getByName(panTiltDriveControlName);
-				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-				outputStream.write(new byte[] { (byte) panSpeedInt, (byte) tiltSpeedInt });
-				outputStream.write(pantTiltDrive.getCode());
-				performControl(PayloadCategory.PAN_TILTER, Command.PAN_TILT_DRIVE, outputStream.toByteArray());
+				sendPanTiltDriveCommand(PanTiltDrive.getByName(panTiltDriveControlName), panSpeedInt, tiltSpeedInt);
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					this.logger.warn("Sleep interrupted", e);
+				}
+				sendPanTiltDriveCommand(PanTiltDrive.STOP, panSpeedInt, tiltSpeedInt);
 				break;
 			}
 			case PRESET: {
@@ -1028,7 +1029,9 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 						value, labelStart, labelEnd, rangeStart, rangeEnd, Float.parseFloat(value));
 			}
 		} catch (NumberFormatException e) {
-			logger.warn("Invalid float value for " + key + ": " + value, e);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Invalid float value for " + key + ": " + value, e);
+			}
 			stats.put(key, LumenVCTR60AConstants.NOT_AVAILABLE);
 		}
 	}
@@ -1697,6 +1700,21 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		return ExposureMode.FULL_AUTO;
 	}
 
+	/**
+	 * Sends a pan/tilt drive command to the device with the specified speed values.
+	 * @param command   the {@link PanTiltDrive} command to execute (e.g. UP, DOWN, LEFT, RIGHT, STOP)
+	 * @param panSpeed  the speed value for the pan axis
+	 * @param tiltSpeed the speed value for the tilt axis
+	 * @throws IOException if an I/O error occurs while writing to the output stream
+	 */
+	private void sendPanTiltDriveCommand(PanTiltDrive command, int panSpeed, int tiltSpeed) throws IOException {
+		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+			outputStream.write(new byte[]{(byte) panSpeed, (byte) tiltSpeed});
+			outputStream.write(command.getCode());
+			performControl(PayloadCategory.PAN_TILTER, Command.PAN_TILT_DRIVE, outputStream.toByteArray());
+		}
+	}
+
 	//--------------------------------------------------------------------------------------------------------------------------------
 	//endregion
 
@@ -1951,7 +1969,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				.filter(i -> ZoomPosition.values()[i].getName().equalsIgnoreCase(zoomPosition))
 				.findFirst();
 
-		if (!currentIndexOpt.isPresent()) {
+		if (!currentIndexOpt.isPresent() && logger.isWarnEnabled()) {
 			this.logger.warn("Zoom position not found in enum: " + zoomPosition);
 			return Optional.empty();
 		}

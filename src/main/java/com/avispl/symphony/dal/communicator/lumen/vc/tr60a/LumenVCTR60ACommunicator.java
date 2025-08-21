@@ -2035,7 +2035,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			Map<String, String> stats, List<AdvancedControllableProperty> props) {
 		addAdvancedControlProperties(props, stats,
 				createDropdown(group.getName() + LumenVCTR60AConstants.HASH + command.getName(), options, value),
-				LumenVCTR60AConstants.NOT_AVAILABLE);
+				value);
 	}
 
 	/**

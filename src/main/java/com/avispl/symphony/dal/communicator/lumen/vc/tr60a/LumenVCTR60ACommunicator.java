@@ -17,6 +17,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -29,6 +31,10 @@ import org.springframework.util.CollectionUtils;
 import com.avispl.symphony.api.common.error.ResourceConfigurationException;
 import com.avispl.symphony.api.dal.control.Controller;
 import com.avispl.symphony.api.dal.dto.control.AdvancedControllableProperty;
+import com.avispl.symphony.api.dal.dto.control.AdvancedControllableProperty.Button;
+import com.avispl.symphony.api.dal.dto.control.AdvancedControllableProperty.DropDown;
+import com.avispl.symphony.api.dal.dto.control.AdvancedControllableProperty.Slider;
+import com.avispl.symphony.api.dal.dto.control.AdvancedControllableProperty.Switch;
 import com.avispl.symphony.api.dal.dto.control.ControllableProperty;
 import com.avispl.symphony.api.dal.dto.monitor.ExtendedStatistics;
 import com.avispl.symphony.api.dal.dto.monitor.Statistics;
@@ -51,6 +57,7 @@ import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.D
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ExposureCompLevel;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ExposureMode;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.FocusMode;
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.GainLevel;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.GeneralProperty;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.InitialPosition;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.IrisControl;
@@ -67,6 +74,7 @@ import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.S
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.WBMode;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.WDROptions;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ZoomControl;
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ZoomPosition;
 import com.avispl.symphony.dal.util.StringUtils;
 
 /**
@@ -125,6 +133,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	private int sequenceNumber = 1;
 	private int currentPreset = -1;
 	private long nextMonitoringCycleTimestamp = System.currentTimeMillis();
+	private String powerStatusMessage = null;
 
 	/** Adapter metadata properties - adapter version and build date */
 	private Properties adapterProperties;
@@ -272,7 +281,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	@Override
 	public void controlProperty(ControllableProperty controllableProperty) throws IOException {
 		if (System.currentTimeMillis() < nextMonitoringCycleTimestamp) {
-			throw new IllegalStateException("Cannot control while power is null ");
+			throw new IllegalStateException("Cannot control while power is " + powerStatusMessage);
 		}
 		Map<String, String> stats = this.localExtendedStatistics.getStatistics();
 		List<AdvancedControllableProperty> advancedControllableProperties = this.localExtendedStatistics.getControllableProperties();
@@ -285,24 +294,46 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			this.logger.debug("controlProperty value " + value);
 		}
 
-		String[] splitProperty = property.split(String.valueOf(LumenVCTR60AConstants.HASH));
+		String[] splitProperty = property.split(LumenVCTR60AConstants.HASH);
 		Command command = Command.getByName(splitProperty[0]);
-		Command commandField = Command.getByGroupAndName(splitProperty[0], splitProperty[1]);
-
+		Command commandField = null;
+		if(property.contains(LumenVCTR60AConstants.HASH)){
+			commandField = Command.getByGroupAndName(splitProperty[0], splitProperty[1]);
+		}
 		switch (command) {
-			case ZOOM: {
-				if(zoomSpeedInt != null){
-					if (Objects.equals(splitProperty[1], ZoomControl.TELE.getName())) {
-						performControl(PayloadCategory.CAMERA, Command.ZOOM, (byte) (0x20 | zoomSpeedInt));
-					} else if (Objects.equals(splitProperty[1], ZoomControl.WIDE.getName())) {
-						performControl(PayloadCategory.CAMERA, Command.ZOOM, (byte) (0x30 | zoomSpeedInt));
-					}
+			case POWER: {
+				if (value.equals(LumenVCTR60AConstants.SWITCH_STATUS_ON)) {
+					powerStatusMessage = LumenVCTR60AConstants.POWER_ON_STATUS;
+					performControl(PayloadCategory.CAMERA, Command.POWER, PowerStatus.ON.getCode());
+				} else if (value.equals(LumenVCTR60AConstants.SWITCH_STATUS_OFF)) {
+					powerStatusMessage = LumenVCTR60AConstants.POWER_OFF_STATUS;
+					performControl(PayloadCategory.CAMERA, Command.POWER, PowerStatus.OFF.getCode());
+				}
+				break;
+			}
+			case ZOOM:{
+				String zoomPosition = getZoomPosition();
+				String direction = splitProperty[1];
+
+				if (zoomPosition == null && logger.isWarnEnabled()) {
+					this.logger.warn("Zoom position not available, skip control.");
+					break;
+				}
+
+				Optional<byte[]> newZoomCodeOpt = calculateNewZoomCode(zoomPosition, direction);
+				if (!newZoomCodeOpt.isPresent()) {
+					break;
+				}
+
+				byte[] newZoomCode = newZoomCodeOpt.get();
+
+				if (zoomSpeedInt != null) {
+					byte[] zoomParam = new byte[5];
+					System.arraycopy(newZoomCode, 0, zoomParam, 0, 4);
+					zoomParam[4] = zoomSpeedInt.byteValue();
+					performControl(PayloadCategory.CAMERA, Command.ZOOM_POSITION, zoomParam);
 				} else {
-					if (Objects.equals(splitProperty[1], ZoomControl.TELE.getName())) {
-						performControl(PayloadCategory.CAMERA, Command.ZOOM, ZoomControl.TELE.getCode());
-					} else if (Objects.equals(splitProperty[1], ZoomControl.WIDE.getName())) {
-						performControl(PayloadCategory.CAMERA, Command.ZOOM, ZoomControl.WIDE.getCode());
-					}
+					performControl(PayloadCategory.CAMERA, Command.ZOOM_POSITION, newZoomCode);
 				}
 				break;
 			}
@@ -334,12 +365,14 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 					performControl(PayloadCategory.PAN_TILTER, Command.PAN_TILT_HOME);
 					break;
 				}
-
-				PanTiltDrive pantTiltDrive = PanTiltDrive.getByName(panTiltDriveControlName);
-				ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-				outputStream.write(new byte[] { (byte) panSpeedInt, (byte) tiltSpeedInt });
-				outputStream.write(pantTiltDrive.getCode());
-				performControl(PayloadCategory.PAN_TILTER, Command.PAN_TILT_DRIVE, outputStream.toByteArray());
+				sendPanTiltDriveCommand(PanTiltDrive.getByName(panTiltDriveControlName), panSpeedInt, tiltSpeedInt);
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					this.logger.warn("Sleep interrupted", e);
+				}
+				sendPanTiltDriveCommand(PanTiltDrive.STOP, panSpeedInt, tiltSpeedInt);
 				break;
 			}
 			case PRESET: {
@@ -412,8 +445,19 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		}
 
 			retrieveMetadata(stats);
-			populateGeneralProperties(stats);
-			populateControlCapabilities(stats, advancedControllableProperties);
+			if (System.currentTimeMillis() < nextMonitoringCycleTimestamp) {
+				// If in monitoring cycle -> do not render controllable properties
+				stats.put(Command.POWER_STATUS.getName(), powerStatusMessage);
+			} else {
+				// Reset sequence number to 0 if it reaches the max value of integer
+				// (need to check it before all command can be performed)
+				if (sequenceNumber == Integer.MAX_VALUE - Command.values().length) {
+					sequenceNumber = 0;
+				}
+				// Control capabilities
+				populateGeneralProperties(stats);
+				populateControlCapabilities(stats, advancedControllableProperties);
+			}
 
 			extStats.setStatistics(stats);
 			extStats.setControllableProperties(advancedControllableProperties);
@@ -465,23 +509,23 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 */
 	private void checkOutOfRange(StringBuilder errorMessages) {
 		if (this.cameraIDInt < 1 || this.cameraIDInt > 7) {
-			errorMessages.append("Camera ID with value ").append(this.VISCACameraIDAddress).append(" is out of range. Camera ID must between 1 and 7. ");
+			errorMessages.append("Camera ID with value ").append(this.VISCACameraIDAddress).append(" is out of range. Camera ID must be between 1 and 7. ");
 		}
 
 		if (this.panSpeedInt < 1 || this.panSpeedInt > 24) {
-			errorMessages.append("Pan speed with value ").append(this.panSpeed).append(" is out of range. Pan speed must between 1 and 24. ");
+			errorMessages.append("Pan speed with value ").append(this.panSpeed).append(" is out of range. Pan speed must be between 1 and 24. ");
 		}
 
 		if (this.tiltSpeedInt < 1 || this.tiltSpeedInt > 20) {
-			errorMessages.append("Tilt speed with value ").append(this.tiltSpeed).append(" is out of range. Tilt speed must between 1 and 20. ");
+			errorMessages.append("Tilt speed with value ").append(this.tiltSpeed).append(" is out of range. Tilt speed must be between 1 and 20. ");
 		}
 
 		if ( this.zoomSpeedInt != null && (this.zoomSpeedInt < 0 || zoomSpeedInt > 7)) {
-			errorMessages.append("Zoom speed with value ").append(this.zoomSpeedInt).append(" is out of range. Zoom speed must between 0 and 7. ");
+			errorMessages.append("Zoom speed with value ").append(this.zoomSpeedInt).append(" is out of range. Zoom speed must be between 0 and 7. ");
 		}
 
 		if (this.focusSpeedInt != null && (focusSpeedInt < 0 || focusSpeedInt > 7)) {
-			errorMessages.append("Focus speed with value ").append(this.focusSpeedInt).append(" is out of range. Focus speed must between 0 and 7.");
+			errorMessages.append("Focus speed with value ").append(this.focusSpeedInt).append(" is out of range. Focus speed must be between 0 and 7.");
 		}
 	}
 
@@ -513,32 +557,41 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @param advancedControllableProperties is the list that store all controllable properties
 	 */
 	private void populateControlCapabilities(Map<String, String> stats, List<AdvancedControllableProperty> advancedControllableProperties) {
-		// Exposure control
-		populateExposureControl(stats, advancedControllableProperties);
+		// Getting power status from device
+		String powerStatus = getPowerStatus();
 
-		// Focus control
-		populateFocusControl(stats, advancedControllableProperties);
+		if (Objects.equals(powerStatus, PowerStatus.OFF.getName())) {
+			populateSwitchControl(stats, advancedControllableProperties, Command.POWER.getName(), powerStatus, PowerStatus.OFF.getName(), PowerStatus.ON.getName());
+		} else if (Objects.equals(powerStatus, PowerStatus.ON.getName())) {
+			populateSwitchControl(stats, advancedControllableProperties, Command.POWER.getName(), powerStatus, PowerStatus.OFF.getName(), PowerStatus.ON.getName());
 
-		//Mirror control
-		populateMirrorControl(stats, advancedControllableProperties);
+			// Exposure control
+			populateExposureControl(stats, advancedControllableProperties);
 
-		// WB control
-		populateWBControl(stats, advancedControllableProperties);
+			// Focus control
+			populateFocusControl(stats, advancedControllableProperties);
 
-		// Pan tilt control
-		populatePanTiltControl(stats, advancedControllableProperties);
+			//Mirror control
+			populateMirrorControl(stats, advancedControllableProperties);
 
-		// Pan tilt zoom control
-		populatePanTiltZoomControl(stats, advancedControllableProperties);
+			// WB control
+			populateWBControl(stats, advancedControllableProperties);
 
-		// Picture
-		populatePictureControl(stats, advancedControllableProperties);
+			// Pan tilt control
+			populatePanTiltControl(stats, advancedControllableProperties);
 
-		// Preset control
-		populatePresetControl(stats, advancedControllableProperties);
+			// Pan tilt zoom control
+			populatePanTiltZoomControl(stats, advancedControllableProperties);
 
-		// Zoom control
-		populateZoomControl(stats, advancedControllableProperties);
+			// Picture
+			populatePictureControl(stats, advancedControllableProperties);
+
+			// Preset control
+			populatePresetControl(stats, advancedControllableProperties);
+
+			// Zoom control
+			populateZoomControl(stats, advancedControllableProperties);
+		}
 	}
 
 	//region Control device
@@ -578,6 +631,9 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			case SHUTTER_DIRECT:
 				performControl(PayloadCategory.CAMERA, Command.SHUTTER_CONTROL, ShutterControl.getByName(value).getCode());
 				break;
+			case GAIN_LEVEL:
+				performControl(PayloadCategory.CAMERA, Command.GAIN_LEVEL_CONTROL, GainLevel.getByName(value).getCode());
+				break;
 			case WDR_OPTION:
 				performControl(PayloadCategory.CAMERA, exposureCommand, WDROptions.getByName(value).getCode());
 				break;
@@ -586,7 +642,6 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			}
 		}
 	}
-
 	/**
 	 * This method is used to control focus:
 	 * <li>Focus Mode</li>
@@ -612,13 +667,16 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 					break;
 				case FOCUS_FAR:
 				case FOCUS_NEAR:
-					if(focusSpeedInt != null){
-						boolean isFar = focusCommand.getCode()[1] == 0x02;
-						byte variableSpeedCode = (byte) (isFar ? (0x20 | focusSpeedInt) : (0x30 | focusSpeedInt));
-						performControl(PayloadCategory.CAMERA, Command.FOCUS_VARIABLE_SPEED, variableSpeedCode);
+					int newValue;
+					int currentValue = Integer.parseInt(getFocusPosition());
+					boolean isFar = focusCommand.getCode()[1] == 0x02;
+					if (isFar) {
+						newValue = Math.max(LumenVCTR60AConstants.FOCUS_MIN, currentValue - LumenVCTR60AConstants.FOCUS_STEP);
 					} else {
-						performControl(PayloadCategory.CAMERA, focusCommand);
+						newValue = Math.min(LumenVCTR60AConstants.FOCUS_MAX, currentValue + LumenVCTR60AConstants.FOCUS_STEP);
 					}
+					byte[] focusBytes = convertFocusValueToBytes(newValue);
+					performControl(PayloadCategory.CAMERA, Command.FOCUS_POSITION, focusBytes);
 					break;
 				default: {
 					throw new IllegalStateException("Unexpected value: " + focusCommand);
@@ -628,6 +686,22 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			logger.error("error during command " + focusCommand.getName() + " send", e);
 			throw new IllegalStateException("Error while sending command " + focusCommand.getName());
 		}
+	}
+
+	/**
+	 * This is commonly used for encoding focus control values in VISCA-over-IP protocols,
+	 * where each nibble must be transmitted separately.
+	 *
+	 * @param value the integer value to encode; typically a 16‑bit value (0–65535).
+	 * @return a byte array of length 4 containing the high‑to‑low 4‑bit segments.
+	 */
+	public static byte[] convertFocusValueToBytes(int value) {
+		byte[] result = new byte[4];
+		result[0] = (byte) ((value >> 12) & 0x0F);
+		result[1] = (byte) ((value >> 8) & 0x0F);
+		result[2] = (byte) ((value >> 4) & 0x0F);
+		result[3] = (byte) (value & 0x0F);
+		return result;
 	}
 
 	/**
@@ -955,7 +1029,9 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 						value, labelStart, labelEnd, rangeStart, rangeEnd, Float.parseFloat(value));
 			}
 		} catch (NumberFormatException e) {
-			logger.warn("Invalid float value for " + key + ": " + value, e);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Invalid float value for " + key + ": " + value, e);
+			}
 			stats.put(key, LumenVCTR60AConstants.NOT_AVAILABLE);
 		}
 	}
@@ -1011,6 +1087,10 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				.map(ShutterControl::getName)
 				.collect(Collectors.toList());
 
+		List<String> gainLevelList = Arrays.stream(GainLevel.values())
+				.map(GainLevel::getName)
+				.collect(Collectors.toList());
+
 		List<String> WDRList = Arrays.asList(
 				WDROptions.OFF.getName(),
 				WDROptions.WDR_OPTIONS_1.getName(),
@@ -1064,6 +1144,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 				break;
 			}
 			case MANUAL:
+				addDropdownOrNA(Command.GAIN_LEVEL, this.getGainLevel(), gainLevelList, stats, advancedControllableProperties);
 				addDropdownOrNA(Command.SHUTTER_DIRECT, this.getShutterSpeed(), shutterList, stats, advancedControllableProperties);
 				addDropdownOrNA(Command.IRIS_DIRECT, this.getIrisLevel(), irisNameList, stats, advancedControllableProperties);
 				break;
@@ -1332,6 +1413,26 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	}
 
 	/**
+	 * This method is used to get the Zoom position
+	 *
+	 * @return returns the Zoom position
+	 */
+	private String getZoomPosition() {
+		return getValueByCommand(Command.ZOOM_POSITION, PayloadCategory.CAMERA, Object.class,
+				"ZoomPosition", String::valueOf);
+	}
+
+	/**
+	 * This method is used to get the Focus position
+	 *
+	 * @return returns the Focus position
+	 */
+	private String getFocusPosition() {
+		return getValueByCommand(Command.FOCUS_POSITION, PayloadCategory.CAMERA, Object.class,
+				"FocusPosition", String::valueOf);
+	}
+
+	/**
 	 * This method is used to get the AF sensitivity
 	 *
 	 * @return String This returns the AF sensitivity
@@ -1359,6 +1460,16 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	private String getGainLimitLevel() {
 		return getValueByCommand(Command.GAIN_LIMIT_DIRECT, PayloadCategory.CAMERA, Integer.class,
 				"gain limit level", val -> String.valueOf((int) val));
+	}
+
+	/**
+	 * This method is used to get the current display current gain level
+	 *
+	 * @return String This returns the gain level
+	 */
+	private String getGainLevel() {
+		return getValueByCommand(Command.GAIN_LEVEL, PayloadCategory.CAMERA, Object.class,
+				"gain level", String::valueOf);
 	}
 
 	/**
@@ -1515,6 +1626,15 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	}
 
 	/**
+	 * This method is used to get the current display power status
+	 *
+	 * @return String This returns the power status
+	 */
+	private String getPowerStatus() {
+		return getValueByCommand(Command.POWER, PayloadCategory.CAMERA, PowerStatus.class,"power status", PowerStatus::getName);
+	}
+
+	/**
 	 * This method is used to get the WDR
 	 *
 	 * @return String This returns the WDR
@@ -1578,6 +1698,21 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			this.logger.error("error during get exposure mode", e);
 		}
 		return ExposureMode.FULL_AUTO;
+	}
+
+	/**
+	 * Sends a pan/tilt drive command to the device with the specified speed values.
+	 * @param command   the {@link PanTiltDrive} command to execute (e.g. UP, DOWN, LEFT, RIGHT, STOP)
+	 * @param panSpeed  the speed value for the pan axis
+	 * @param tiltSpeed the speed value for the tilt axis
+	 * @throws IOException if an I/O error occurs while writing to the output stream
+	 */
+	private void sendPanTiltDriveCommand(PanTiltDrive command, int panSpeed, int tiltSpeed) throws IOException {
+		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+			outputStream.write(new byte[]{(byte) panSpeed, (byte) tiltSpeed});
+			outputStream.write(command.getCode());
+			performControl(PayloadCategory.PAN_TILTER, Command.PAN_TILT_DRIVE, outputStream.toByteArray());
+		}
 	}
 
 	//--------------------------------------------------------------------------------------------------------------------------------
@@ -1823,6 +1958,38 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	}
 
 	/**
+	 * Calculates the new zoom code based on the current zoom position and the given direction.
+	 *
+	 * @param zoomPosition the name of the current zoom position (case-insensitive match with {@link ZoomPosition} enum)
+	 * @param direction the direction of zoom adjustment, expected to be either {@link ZoomControl#TELE} or {@link ZoomControl#WIDE}
+	 * @return an {@link Optional} containing the new zoom code as a byte array if the current position is valid; otherwise, {@link Optional#empty()}
+	 */
+	private Optional<byte[]> calculateNewZoomCode(String zoomPosition, String direction) {
+		OptionalInt currentIndexOpt = IntStream.range(0, ZoomPosition.values().length)
+				.filter(i -> ZoomPosition.values()[i].getName().equalsIgnoreCase(zoomPosition))
+				.findFirst();
+
+		if (!currentIndexOpt.isPresent() && logger.isWarnEnabled()) {
+			this.logger.warn("Zoom position not found in enum: " + zoomPosition);
+			return Optional.empty();
+		}
+
+		int currentIndex = currentIndexOpt.getAsInt();
+		int targetIndex = currentIndex;
+
+		boolean isTele = Objects.equals(direction, ZoomControl.TELE.getName());
+		boolean isWide = Objects.equals(direction, ZoomControl.WIDE.getName());
+
+		if (isTele && currentIndex < ZoomPosition.values().length - 1) {
+			targetIndex++;
+		} else if (isWide && currentIndex > 0) {
+			targetIndex--;
+		}
+
+		return Optional.of(ZoomPosition.values()[targetIndex].getCode());
+	}
+
+	/**
 	 * Helper method to parse string to int with default is null.
 	 */
 	private Integer tryParseInteger(String value, String fieldName, StringBuilder errorMessages) {
@@ -1868,7 +2035,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			Map<String, String> stats, List<AdvancedControllableProperty> props) {
 		addAdvancedControlProperties(props, stats,
 				createDropdown(group.getName() + LumenVCTR60AConstants.HASH + command.getName(), options, value),
-				LumenVCTR60AConstants.NOT_AVAILABLE);
+				value);
 	}
 
 	/**
@@ -1901,7 +2068,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @return instance of AdvancedControllableProperty with AdvancedControllableProperty.Button as type
 	 */
 	private AdvancedControllableProperty createButton(String name, String label) {
-		AdvancedControllableProperty.Button button = new AdvancedControllableProperty.Button();
+		Button button = new Button();
 		button.setLabel(label);
 		button.setLabelPressed("Running...");
 		button.setGracePeriod(0L);
@@ -1917,7 +2084,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @return AdvancedControllableProperty button instance
 	 */
 	private AdvancedControllableProperty createSwitch(String name, int status, String labelOff, String labelOn) {
-		AdvancedControllableProperty.Switch toggle = new AdvancedControllableProperty.Switch();
+		Switch toggle = new Switch();
 		toggle.setLabelOff(labelOff);
 		toggle.setLabelOn(labelOn);
 
@@ -1935,7 +2102,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @return AdvancedControllableProperty slider instance
 	 */
 	private AdvancedControllableProperty createSlider(String name, String labelStart, String labelEnd, Float rangeStart, Float rangeEnd, Float initialValue) {
-		AdvancedControllableProperty.Slider slider = new AdvancedControllableProperty.Slider();
+		Slider slider = new Slider();
 		slider.setLabelStart(labelStart);
 		slider.setLabelEnd(labelEnd);
 		slider.setRangeStart(rangeStart);
@@ -1970,7 +2137,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @return AdvancedControllableProperty preset instance
 	 */
 	private AdvancedControllableProperty createDropdown(String name, List<String> values, String initialValue) {
-		AdvancedControllableProperty.DropDown dropDown = new AdvancedControllableProperty.DropDown();
+		DropDown dropDown = new DropDown();
 		dropDown.setOptions(values.toArray(new String[0]));
 		dropDown.setLabels(values.toArray(new String[0]));
 

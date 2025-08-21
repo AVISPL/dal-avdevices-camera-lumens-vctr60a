@@ -18,6 +18,7 @@ import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.B
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ExposureCompLevel;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ExposureMode;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.FocusMode;
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.GainLevel;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.InitialPosition;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.IrisControl;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.PanTiltSpeedComp;
@@ -30,6 +31,7 @@ import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.S
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.SlowShutterStatus;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.WBMode;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.WDROptions;
+import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.payload.param.ZoomPosition;
 
 /**
  * This class parses the reply payloads from the device into meaningful objects.
@@ -49,7 +51,6 @@ public class ResponseParser extends BaseDevice {
 	 */
 	public Object parse(Command expectedCommand, byte[] reply) {
 		byte currentValue = reply[2];
-
 		switch (expectedCommand) {
 			case POWER:
 				return findEnum(PowerStatus.values(), currentValue);
@@ -84,6 +85,8 @@ public class ResponseParser extends BaseDevice {
 				return reply[4] * 16 + reply[5];
 			case GAIN_LIMIT_DIRECT:
 				return 2 * (Byte.toUnsignedInt(reply[2]) - 4) + 8;
+			case GAIN_LEVEL:
+				return parseGainLevel(reply);
 			case PRESET:
 				return Byte.toUnsignedInt(reply[2]);
 			case BACKLIGHT:
@@ -124,6 +127,10 @@ public class ResponseParser extends BaseDevice {
 			case SERIAL_NUMBER:
 			case CAMERA_ID:
 				return parseAsciiValue(reply);
+			case ZOOM_POSITION:
+				return getZoomLevelNameFromReply(reply);
+			case FOCUS_POSITION:
+				return getFocusPositionFromReply(reply);
 			default:
 				throw new IllegalStateException("Unexpected command: " + expectedCommand);
 		}
@@ -145,6 +152,51 @@ public class ResponseParser extends BaseDevice {
 	}
 
 	/**
+	 * Extracts and converts the focus position from a VISCA response.
+	 *
+	 * @param reply the complete VISCA response from the camera
+	 * @return an integer representing the decoded focus position
+	 */
+	private int getFocusPositionFromReply(byte[] reply) {
+		byte[] focusBytes = Arrays.copyOfRange(reply, 2, 6);
+		return toFocusAndZoomPositionValue(focusBytes);
+	}
+
+	/**
+	 * Convert 4-byte array to a single integer (Zoom position value)
+	 *
+	 * @param bytes byte array of size 4
+	 * @return integer zoom position value
+	 */
+	public static int toFocusAndZoomPositionValue(byte[] bytes) {
+		if (bytes == null || bytes.length != 4) {
+			throw new IllegalArgumentException("Position must be 4 bytes.");
+		}
+		return ((bytes[0] & 0xFF) << 12)
+				| ((bytes[1] & 0xFF) << 8)
+				| ((bytes[2] & 0xFF) << 4)
+				| (bytes[3] & 0x0F);
+	}
+
+	/**
+	 * get zoom level name from the given reply.
+	 * Uses bytes 2 to 6 to compute an index into {@link ShutterControl}.
+	 *
+	 * @param reply response byte array
+	 * @return zoom level name
+	 */
+	private String getZoomLevelNameFromReply(byte[] reply) {
+		byte[] zoomBytes = Arrays.copyOfRange(reply, 2, 6);
+		String zoomLevel = ZoomPosition.getZoomLevelNameFromBytes(zoomBytes);
+		for (ZoomPosition zp : ZoomPosition.values()) {
+			if(zoomLevel.equals(zp.getName())){
+				return zp.getName();
+			}
+		}
+		return LumenVCTR60AConstants.NOT_AVAILABLE;
+	}
+
+	/**
 	 * Finds the name of a {@link SlowPanTiltStatus} enum constant matching the given byte code.
 	 *
 	 * @param values     array of SlowPanTiltStatus constants to search
@@ -157,6 +209,20 @@ public class ResponseParser extends BaseDevice {
 				.map(SlowPanTiltStatus::getName)
 				.findFirst()
 				.orElse(null);
+	}
+
+	/**
+	 * Parses a gain level from the specified device reply.
+	 *
+	 * @param reply response byte array from the device
+	 * @return gain level name from {@link GainLevel} or {@code NONE_VALUE} if index is out-of-range
+	 */
+	private String parseGainLevel(byte[] reply) {
+		List<String> gainList = Arrays.stream(GainLevel.values())
+				.map(GainLevel::getName)
+				.collect(Collectors.toList());
+		int index = Byte.toUnsignedInt(reply[5]);
+		return index < gainList.size() ? gainList.get(index) : LumenVCTR60AConstants.NONE_VALUE;
 	}
 
 	/**

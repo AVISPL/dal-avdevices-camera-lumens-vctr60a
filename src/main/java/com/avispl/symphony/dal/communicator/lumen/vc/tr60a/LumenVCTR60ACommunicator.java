@@ -39,6 +39,7 @@ import com.avispl.symphony.api.dal.dto.control.ControllableProperty;
 import com.avispl.symphony.api.dal.dto.monitor.ExtendedStatistics;
 import com.avispl.symphony.api.dal.dto.monitor.Statistics;
 import com.avispl.symphony.api.dal.error.CommandFailureException;
+import com.avispl.symphony.api.dal.error.ResourceNotReachableException;
 import com.avispl.symphony.api.dal.monitor.Monitorable;
 import com.avispl.symphony.dal.communicator.UDPCommunicator;
 import com.avispl.symphony.dal.communicator.lumen.vc.tr60a.enums.Index;
@@ -535,9 +536,13 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @param stats the map to populate with retrieved properties
 	 */
 	private void populateGeneralProperties(Map<String, String> stats) {
-		for (GeneralProperty gp : GeneralProperty.values()) {
-			String value = retrieveDeviceInfo(gp.key(), gp.categoryCode(), gp.command());
-			stats.put(gp.key(), value);
+		try{
+			for (GeneralProperty gp : GeneralProperty.values()) {
+				String value = retrieveDeviceInfo(gp.key(), gp.categoryCode(), gp.command());
+				stats.put(gp.key(), value);
+			}
+		} catch (Exception e) {
+			throw new ResourceNotReachableException(e.getMessage(), e);
 		}
 	}
 
@@ -557,40 +562,44 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 * @param advancedControllableProperties is the list that store all controllable properties
 	 */
 	private void populateControlCapabilities(Map<String, String> stats, List<AdvancedControllableProperty> advancedControllableProperties) {
-		// Getting power status from device
-		String powerStatus = getPowerStatus();
+		try {
+			// Getting power status from device
+			String powerStatus = getPowerStatus();
 
-		if (Objects.equals(powerStatus, PowerStatus.OFF.getName())) {
-			populateSwitchControl(stats, advancedControllableProperties, Command.POWER.getName(), powerStatus, PowerStatus.OFF.getName(), PowerStatus.ON.getName());
-		} else if (Objects.equals(powerStatus, PowerStatus.ON.getName())) {
-			populateSwitchControl(stats, advancedControllableProperties, Command.POWER.getName(), powerStatus, PowerStatus.OFF.getName(), PowerStatus.ON.getName());
+			if (Objects.equals(powerStatus, PowerStatus.OFF.getName())) {
+				populateSwitchControl(stats, advancedControllableProperties, Command.POWER.getName(), powerStatus, PowerStatus.OFF.getName(), PowerStatus.ON.getName());
+			} else if (Objects.equals(powerStatus, PowerStatus.ON.getName())) {
+				populateSwitchControl(stats, advancedControllableProperties, Command.POWER.getName(), powerStatus, PowerStatus.OFF.getName(), PowerStatus.ON.getName());
 
-			// Exposure control
-			populateExposureControl(stats, advancedControllableProperties);
+				// Exposure control
+				populateExposureControl(stats, advancedControllableProperties);
 
-			// Focus control
-			populateFocusControl(stats, advancedControllableProperties);
+				// Focus control
+				populateFocusControl(stats, advancedControllableProperties);
 
-			//Mirror control
-			populateMirrorControl(stats, advancedControllableProperties);
+				//Mirror control
+				populateMirrorControl(stats, advancedControllableProperties);
 
-			// WB control
-			populateWBControl(stats, advancedControllableProperties);
+				// WB control
+				populateWBControl(stats, advancedControllableProperties);
 
-			// Pan tilt control
-			populatePanTiltControl(stats, advancedControllableProperties);
+				// Pan tilt control
+				populatePanTiltControl(stats, advancedControllableProperties);
 
-			// Pan tilt zoom control
-			populatePanTiltZoomControl(stats, advancedControllableProperties);
+				// Pan tilt zoom control
+				populatePanTiltZoomControl(stats, advancedControllableProperties);
 
-			// Picture
-			populatePictureControl(stats, advancedControllableProperties);
+				// Picture
+				populatePictureControl(stats, advancedControllableProperties);
 
-			// Preset control
-			populatePresetControl(stats, advancedControllableProperties);
+				// Preset control
+				populatePresetControl(stats, advancedControllableProperties);
 
-			// Zoom control
-			populateZoomControl(stats, advancedControllableProperties);
+				// Zoom control
+				populateZoomControl(stats, advancedControllableProperties);
+			}
+		} catch (Exception e){
+			throw new ResourceNotReachableException(e.getMessage(), e);
 		}
 	}
 
@@ -1383,8 +1392,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			String result = (String) digestResponse(resp, seq, CommandType.INQUIRY, expectedCommand);
 			return result != null ? result : LumenVCTR60AConstants.NONE_VALUE;
 		} catch (Exception e) {
-			logger.error("Error getting " + key, e);
-			return LumenVCTR60AConstants.NOT_AVAILABLE;
+			throw new ResourceNotReachableException(e.getMessage(), e);
 		}
 	}
 

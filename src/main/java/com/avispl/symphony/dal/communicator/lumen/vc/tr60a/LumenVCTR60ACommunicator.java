@@ -1392,6 +1392,9 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			String result = (String) digestResponse(resp, seq, CommandType.INQUIRY, expectedCommand);
 			return result != null ? result : LumenVCTR60AConstants.NONE_VALUE;
 		} catch (Exception e) {
+			if (logger.isErrorEnabled()) {
+				logger.error("Error getting " + key, e);
+			}
 			throw new ResourceNotReachableException(e.getMessage(), e);
 		}
 	}

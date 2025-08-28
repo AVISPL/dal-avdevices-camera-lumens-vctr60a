@@ -16,16 +16,22 @@ import java.util.List;
  */
 public class LumenVCTR60AConstants {
 	public static final byte BYTE_SUFFIX = (byte) 0xFF;
-	public static final char HASH = '#';
+	public static final String HASH = "#";
 	public static final String LABEL_END_HUE_LEVEL = "14";
 	public static final float RANGE_START_HUE_LEVEL = 0F;
 	public static final float RANGE_END_HUE_LEVEL = 14F;
 	public static final String SWITCH_STATUS_ON = "1";
 	public static final String SWITCH_STATUS_OFF = "0";
+	public static final long DELAY_PERIOD = 45000;
 	public static final String PLUS = "+";
 	public static final String MINUS = "-";
 	public static final String CLOSE_PARENTHESIS = "\\)";
 	public static final String DEFAULT_PRESET = "Please select a preset";
+	public static final String POWER_ON_STATUS = "Turning on...";
+	public static final String POWER_OFF_STATUS = "Turning off...";
+	public static final int FOCUS_STEP = 10;
+	public static final int FOCUS_MIN = 0x0000; // Far
+	public static final int FOCUS_MAX = 0x131A; // Near
 
 	public static final String NONE_VALUE = "None";
 	public static final String NULL = "Null";

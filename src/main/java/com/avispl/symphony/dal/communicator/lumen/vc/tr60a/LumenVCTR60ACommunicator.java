@@ -80,13 +80,13 @@ import com.avispl.symphony.dal.util.StringUtils;
 
 /**
  * Lumen VC TR60A Adapter
- *
+ * ----
  * Properties are divided into groups:
  * Exposure, Focus, Mirror, SystemNetwork,
  * PanTiltControl, Picture, Preset, PTZ, WhiteBalance, Zoom
- *
+ * ----
  * Supported features are:
- *
+ * ----
  * Monitoring:
  * - Preset recall and status feedback
  * - CameraId
@@ -97,7 +97,7 @@ import com.avispl.symphony.dal.util.StringUtils;
  * - VideoPIP
  * - VideoPrivacyMode
  * - VideoResolution
- *
+ * ------
  * Controlling:
  * Exposure Group
  * - AntiFlicker
@@ -304,10 +304,10 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		switch (command) {
 			case POWER: {
 				if (value.equals(LumenVCTR60AConstants.SWITCH_STATUS_ON)) {
-					powerStatusMessage = LumenVCTR60AConstants.POWER_ON_STATUS;
+					powerStatusMessage = PowerStatus.ON.getName();
 					performControl(PayloadCategory.CAMERA, Command.POWER, PowerStatus.ON.getCode());
 				} else if (value.equals(LumenVCTR60AConstants.SWITCH_STATUS_OFF)) {
-					powerStatusMessage = LumenVCTR60AConstants.POWER_OFF_STATUS;
+					powerStatusMessage = PowerStatus.OFF.getName();
 					performControl(PayloadCategory.CAMERA, Command.POWER, PowerStatus.OFF.getCode());
 				}
 				break;
@@ -448,7 +448,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 			retrieveMetadata(stats);
 			if (System.currentTimeMillis() < nextMonitoringCycleTimestamp) {
 				// If in monitoring cycle -> do not render controllable properties
-				stats.put(Command.POWER_STATUS.getName(), powerStatusMessage);
+				stats.put(Command.POWER.getName(), powerStatusMessage);
 			} else {
 				// Reset sequence number to 0 if it reaches the max value of integer
 				// (need to check it before all command can be performed)
@@ -537,9 +537,12 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	 */
 	private void populateGeneralProperties(Map<String, String> stats) {
 		try{
-			for (GeneralProperty gp : GeneralProperty.values()) {
-				String value = retrieveDeviceInfo(gp.key(), gp.categoryCode(), gp.command());
-				stats.put(gp.key(), value);
+			String powerStatus = powerStatusMessage != null ? powerStatusMessage : getPowerStatus();
+			if (Objects.equals(powerStatus, PowerStatus.ON.getName())) {
+				for (GeneralProperty gp : GeneralProperty.values()) {
+					String value = retrieveDeviceInfo(gp.key(), gp.categoryCode(), gp.command());
+					stats.put(gp.key(), value);
+				}
 			}
 		} catch (Exception e) {
 			throw new ResourceNotReachableException(e.getMessage(), e);
@@ -564,13 +567,9 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 	private void populateControlCapabilities(Map<String, String> stats, List<AdvancedControllableProperty> advancedControllableProperties) {
 		try {
 			// Getting power status from device
-			String powerStatus = getPowerStatus();
-
-			if (Objects.equals(powerStatus, PowerStatus.OFF.getName())) {
-				populateSwitchControl(stats, advancedControllableProperties, Command.POWER.getName(), powerStatus, PowerStatus.OFF.getName(), PowerStatus.ON.getName());
-			} else if (Objects.equals(powerStatus, PowerStatus.ON.getName())) {
-				populateSwitchControl(stats, advancedControllableProperties, Command.POWER.getName(), powerStatus, PowerStatus.OFF.getName(), PowerStatus.ON.getName());
-
+			String powerStatus = powerStatusMessage != null ? powerStatusMessage : getPowerStatus();
+			if (Objects.equals(powerStatus, PowerStatus.ON.getName())) {
+				populateSwitchControl(stats, advancedControllableProperties, Command.POWER.getName(), PowerStatus.ON.getName(), PowerStatus.OFF.getName(), PowerStatus.ON.getName());
 				// Exposure control
 				populateExposureControl(stats, advancedControllableProperties);
 
@@ -597,6 +596,8 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 
 				// Zoom control
 				populateZoomControl(stats, advancedControllableProperties);
+			} else {
+				populateSwitchControl(stats, advancedControllableProperties, Command.POWER.getName(), PowerStatus.OFF.getName(), PowerStatus.OFF.getName(), PowerStatus.ON.getName());
 			}
 		} catch (Exception e){
 			throw new ResourceNotReachableException(e.getMessage(), e);
@@ -1354,10 +1355,10 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 
 		if (Objects.equals(currentStatus, labelOn)) {
 			stats.put(propertyName, String.valueOf(1));
-			advancedControllableProperties.add(createSwitch(propertyName, 1, labelOff, labelOn));
+			addAdvancedControlProperties(advancedControllableProperties, stats, createSwitch(propertyName, 1, labelOff, labelOn), currentStatus);
 		} else if (Objects.equals(currentStatus, labelOff)) {
 			stats.put(propertyName, String.valueOf(0));
-			advancedControllableProperties.add(createSwitch(propertyName, 0, labelOff, labelOn));
+			addAdvancedControlProperties(advancedControllableProperties, stats, createSwitch(propertyName, 0, labelOff, labelOn), currentStatus);
 		}
 	}
 
@@ -1419,7 +1420,7 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 
 		} catch (Exception e) {
 			this.logger.error("error during get " + logMessage, e);
-			return LumenVCTR60AConstants.NOT_AVAILABLE;
+			throw new ResourceNotReachableException(e.getMessage(), e);
 		}
 	}
 
@@ -1819,12 +1820,18 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 		byte[] response;
 
 		do {
-			response = super.read(command);
-			responseString = getHexByteString(response);
+			try {
+				response = super.read(command);
+				responseString = getHexByteString(response);
 
-			// If this is ACK packet, need to save to the flag to check done reading
-			if (responseString.endsWith(getHexByteString(ReplyStatus.ACK.getCode()))) {
-				hasACK = true;
+				// If this is ACK packet, need to save to the flag to check done reading
+				if (responseString.endsWith(getHexByteString(ReplyStatus.ACK.getCode()))) {
+					hasACK = true;
+				}
+			} catch (IOException e) {
+				throw new ResourceNotReachableException(e.getMessage());
+			} catch (Exception e) {
+				throw new ResourceNotReachableException("Failed to read response data of command " + Arrays.toString(command));
 			}
 
 		} while (!doneReading(command, responseString, hasACK));

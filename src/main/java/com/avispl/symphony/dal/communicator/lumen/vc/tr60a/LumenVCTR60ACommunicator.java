@@ -1829,10 +1829,8 @@ public class LumenVCTR60ACommunicator extends UDPCommunicator implements Control
 					hasACK = true;
 				}
 			} catch (IOException e) {
-				logger.error("Error reading response from socket, socket server might close", e);
 				throw new ResourceNotReachableException(e.getMessage());
 			} catch (Exception e) {
-				logger.error("Failed to read read response data of command " + Arrays.toString(command) + " with error " + e.getMessage());
 				throw new ResourceNotReachableException("Failed to read response data of command " + Arrays.toString(command));
 			}
 
